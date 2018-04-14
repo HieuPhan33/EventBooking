@@ -74,15 +74,11 @@
 			</div>
 		</div>
 
-		<div class="form-group row">
-			{{Form::label('codeQuantity','Quantity of Promo Codes',['class'=>'col-1 col-form-label'])}}
-			<div class="col-4">
-				{{Form::text('codeQuantity','',['class'=>'form-control'])}}
-			</div>
-		</div>
+		<div id="promoCodesContainer"></div>
+		<button type="button" onClick="addCodes()">Add Promotional Code</button>
 
 
-
+		<input id="numOfCodes" name="numOfCodes" value="0" type="hidden">
 		<div class="form-group row">
 			{{Form::submit('Submit',['class'=>'btn btn-primary'])}}
 		</div>

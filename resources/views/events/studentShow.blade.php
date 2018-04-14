@@ -23,7 +23,7 @@
 			@if($event->slotsLeft > 0)
 				@if($event->price != 0)
 					@if(session('isPromoted'))
-						<p>Price <s>{{$event->price}} AUD</s> <large class="text-success">{{($event->price)*0.7}} AUD</large>
+						<p>Price <s>{{$event->price}} AUD</s> <large class="text-success">{{($event->price)*session('type')}} AUD</large>
 					@else
 						<p>Price {{$event->price}}</p>
 					@endif
@@ -41,8 +41,7 @@
 				        <h4 class="modal-title">Select number of ticket</h4>
 				      </div>
 				      <div class="modal-body">
-
-				      	@if(!session('isPromoted') && !empty($data['codes']))
+				      	@if(!session('isPromoted') && !empty($codes))
 				      		<a href="#enterpromo" data-toggle="modal">Enter Promotional Code</a>
 				      	@endif
 				      	<form method="post" action="/events/{{$event->id}}/checkout">
@@ -50,10 +49,9 @@
 				      	<p>Buy ticket  <strong>  {{$event->title}}</strong> 
 				      		<a style="padding-left:5em">
 					      	@if(session('isPromoted'))
-					      		<input type="hidden" name="isPromoted" value="1">
-				      			{{$price = $event->price * 0.7}}x1 +
-				      		@else
-				      			<input type="hidden" name="isPromoted" value="0">		      		
+					      		<input type="hidden" name="promoCode" value="{{session('code')}}">
+				      			{{$price = $event->price * session('type')}}x1 +
+				      		@else	      		
 				      		@endif
 				      			{{$price = $event->price}}
 				      			x
@@ -65,7 +63,7 @@
 				      		</select>
 				      	</p>
 
-				      	<input type="hidden" name="price" value="{{$price}}">
+				      	<input type="hidden" name="type" value="{{session('type')}}">
 				      	<button type="submit">Checkout</button>
 				      	</form>
 
@@ -77,7 +75,7 @@
 
 				  </div>
 				</div>
-					@if(!empty($data['codes']))
+					@if(!empty($codes))
 						<!-- Enter Promo Modal -->
 						<div id="enterpromo" class="modal fade" role="dialog">
 						  <div class="modal-dialog">
@@ -92,12 +90,13 @@
 						      </div>
 						      <div class="modal-body">
 						      	<p class="text-danger" id="err"></p>
-						      	<form method="post" onsubmit="return validatePromoCode({{$codes}})" action="/events/{{$event->id}}/enterPromo">
+						      	<form method="post" onsubmit="return validatePromoCode({{ $codes}})" action="/events/{{$event->id}}/enterPromo">
 						      		{{csrf_field()}}
 						      		<div class="form-group">
 						      			<label for="code">Promotional code </label>
-						      			<input type="text" class="form-control" id="code">
+						      			<input type="text" class="form-control" id="code" name="code">
 						      		</div>
+						      		<input type="hidden" name="type" id="type">
 						      		<button type="submit" class="btn btn-default">Apply</button>
 						      	</form>
 						      </div>

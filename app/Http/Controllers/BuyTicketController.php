@@ -12,22 +12,28 @@ class BuyTicketController extends MailController
 {
 	public function checkout($eventID, Request $request){
     	$quantity = $request->input('quantity');
-        $isPromoted = $request->input('isPromoted');
-        echo $isPromoted;
+        $code = $request->input('promoCode');
+        $type = $request->input('type');
     	$event=DB::select('SELECT * from events WHERE events.id = ?',[$eventID]);
     	$time=Carbon::parse($event[0]->time)->toDayDateTimeString();
-        $data = array('event'=>$event[0], 'quantity'=>$quantity, 'time'=>$time , 'isPromoted'=>$isPromoted);
+        $data = array('event'=>$event[0], 'quantity'=>$quantity, 'time'=>$time , 'code'=>$code, 'type'=>$type);
     	return view('form.Payment')->with($data);
 	}
     public function pay($eventID,Request $request){
-    	$quantity = $request->input('quantity');
-    	$total = $request->input('price') * $quantity;
+    	$code = $request->input('code');
+    	$total = $request->input('total');
+        $quantity = $request->input('quantity');
     	DB::table('buy')->insert(
     		['eventID'=>$eventID, 'userID' => auth()->user()->id , 'quantity' => $quantity , 'total' => $total]
     	);
-    	DB::table('booking')->insert(
-    		['eventID'=>$eventID, 'userID' => auth()->user()->id]
-    	);
+        DB::table('events')->where('id',$eventID)->decrement('slotsLeft');
+    	// DB::table('booking')->insert(
+    	// 	['eventID'=>$eventID, 'userID' => auth()->user()->id]
+    	// );
+        //Delete the Promotional Code if user enters
+        if($code != null){
+            DB::table('promo_codes')->where('id','=',$code)->delete();
+        }
         //Remove this user out of event queue if he has joined in
         $affectedRows = DB::delete("DELETE FROM queue WHERE eventID = ? AND userID = ?",[$request->eventID , auth()->user()->id]);
         $this->bookingNotify($request,$eventID);

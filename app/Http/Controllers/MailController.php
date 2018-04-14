@@ -34,6 +34,11 @@ class MailController extends Controller
     	return $event;
     }
 
+    //Send Receipt when users buy tickets
+    public function receiptBuyTickets(Request $request,$eventID){
+        
+    }
+
     //Notify users of canceling receipt
     public function cancelingNotify(Request $request,$eventID){
         $event = DB::select(

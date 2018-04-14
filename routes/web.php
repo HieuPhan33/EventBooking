@@ -43,7 +43,7 @@ Route::post('/chart/attendanceByTime','StatisticsController@getAttendanceDataByT
 Route::post('/chart/attendanceByUndergraduate','StatisticsController@getAttendanceDataByUndergraduate');
 Route::post('/chart/attendanceByPostgraduate','StatisticsController@getAttendanceDataByPostgraduate');
 Route::post('/events/{id}/checkout','BuyTicketController@checkout');
-Route::post('/events/{id}/paym','BuyTicketController@payt');
+Route::post('/events/{id}/pay','BuyTicketController@pay');
 Route::post('/chart/profitByCategory','StatisticsController@getProfitDataByCategory');
 Route::post('/chart/profitByTime','StatisticsController@getProfitDataByTime');
 Auth::routes();

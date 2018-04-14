@@ -12,25 +12,32 @@
     		<div class="col"><strong>PRICE</strong></div>
     		<div class="col"><strong>QUANTITY</strong></div>
     	</div>
-       @if($isPromoted == 1)
+       @if(!empty($code))
       <div class="row">
-        <div class="col">DISCOUNTED!! {{$event->title}}</div>
-        <div class="col"><s>{{$event->price}} AUD</s> <large class="text-success">{{($event->price)*0.7}} AUD</large></div>
+        <div class="col"><strong>DISCOUNTED!! {{$event->title}}</strong></div>
+        <div class="col"><s>{{$event->price}} AUD</s> <large class="text-success">{{($event->price)*$type}} AUD</large></div>
         <div class="col">1</div>
       </div>
       @endif
+      @if($quantity > 0)
     	<div class="row">
-    		<div class="col">{{$event->title}}</div>
-    		<div class="col">{{$event->price}}</div>
+    		<div class="col">
+          <!-- If the title is displayed as promoted event above, don't bother display title again -->
+          @if(empty($code))
+            {{$event->title}}
+          @endif
+        </div>
+    		<div class="col"><strong>{{$event->price}}</strong></div>
     		<div class="col">{{$quantity}}</div>
     	</div>
+      @endif
     	<div class="row">
     			<div class="col"></div>
     			<div class="col"><strong>Order total : </strong></div>
-          @if($isPromoted == 1)
-            <div class = "col"><strong>{{$event->price * 0.7 + $event->price * $quantity}}</strong></div>
+          @if(!empty($code))
+            <div class = "col"><strong>{{$total = $event->price * $type + $event->price * $quantity}}</strong></div>
           @else
-    			<div class="col"><strong>{{$event->price * $quantity}}</strong></div>
+    			<div class="col"><strong>{{$total = $event->price * $quantity}}</strong></div>
           @endif
     	</div>
     </div>
@@ -95,8 +102,13 @@
             <div class="form-group row" style="margin-left:150px">
               <div class='form-group'>
               <label class='control-label'></label>
-               <input type="hidden" name="quantity" value="{{$quantity}}">
-               <input type="hidden" name="price" value="{{$event->price}}"> 
+               <input type="hidden" name="code" value="{{$code}}">
+               <input type="hidden" name="total" value="{{$total}}"> 
+              @if(!empty($code))
+                <input type="hidden" name="quantity" value = "{{$quantity + 1}}">
+              @else
+                <input type = "hidden" name="quantity" value="{{$quantity}}">
+              @endif
                <button class='form-control btn btn-primary' type='submit'> Pay Now →</button>
        
               </div>

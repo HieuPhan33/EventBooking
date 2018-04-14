@@ -155,16 +155,16 @@ class EventsController extends MailController
      */
     public function store(Request $request)
     {
+        
+
         $this->validate($request,[
             'title'=>'required',
             'description'=>'required',
             'location'=>'required',
             'capacity'=>'required|integer',
             'datetime'=>'required',
-            'codeQuantity'=>'integer|nullable',
             'price'=>'integer|nullable'
         ]);
-
         $event = new Event;
         $event->title = $request->input('title');
         $event->time = $request->input('datetime');
@@ -181,18 +181,29 @@ class EventsController extends MailController
         $event->price = $price;
         $event->save();
         $eventID = DB::getPdo()->lastInsertId();
-        //Store promo code
-        $codeQuantity = $request->input('codeQuantity');
-        for($i = 1; $i <= $codeQuantity; $i++){
-            $promoCode = new PromoCode;
-            $promoCode->id = $this->getRandomString();
-            $promoCode->eventID = $eventID;
-            $promoCode->save();
+        $numOfCodes = $request->input('numOfCodes');
+        if($numOfCodes != 0){
+            for($i = 1; $i <= $numOfCodes; $i++){
+                $quantityID = 'quantity'.$i;
+                $typeID = 'type'.$i;
+                $this->validate($request,[
+                    $quantityID=>'nullable|integer'
+                ]);
+                $quantity = $request->input($quantityID);
+                $type = $request->input($typeID);
+                for($j = 1; $j <= $quantity; $j++){
+                    $promoCode = new PromoCode;
+                    $promoCode->id = $this->getRandomString();
+                    $promoCode->eventID = $eventID; 
+                    $promoCode->type = $type;
+                    $promoCode->save();
+                }
+            }
         }
+
         // Send events to whom interested
         $this->sendEventToUsers($eventID,$event->category);
         return redirect('/events')->with('success','Event Created');
-
 
     }
     // Send new events information to whom interested 
@@ -246,19 +257,17 @@ class EventsController extends MailController
             ON events.category = categories.id
              WHERE events.id = ? AND time >= ?',[auth()->user()->id , auth()->user()->id, auth()->user()->id, $id , date("Y-m-d H:i:s")]);
         $promoCodes = DB::select(
-            'SELECT promo_codes.id FROM events INNER JOIN promo_codes ON events.id = promo_codes.eventID
-            WHERE events.id = ?',[$id]);
+            'SELECT id, type FROM promo_codes 
+            WHERE eventID = ?',[$id]);
         $data = array("event"=>$event[0]);
         $codes = array();
         if(count($promoCodes) > 0){
             foreach($promoCodes as $promoCode){
-                array_push($codes,$promoCode->id);
+                $codes[$promoCode->id] = $promoCode->type;
             }
             $codes = json_encode($codes);
             $data['codes'] = $codes;
         }
-        
-        // $data = ['event'=>$event[0]]
         return view('events.studentShow')->with($data);
     }
 
@@ -293,6 +302,11 @@ class EventsController extends MailController
      */
     public function destroy($id)
     {
+        DB::table('booking')->where('eventID','=',$id)->delete();
+        DB::table('bookmark')->where('eventID','=',$id)->delete();
+        DB::table('buy')->where('eventID','=',$id)->delete();
+        DB::table('promo_codes')->where('eventID','=',$id)->delete();
+        DB::table('absent')->where('eventID','=',$id)->delete();
         DB::table('events')->where('id','=',$id)->delete();
         return redirect('/events')->with('success','Event Deleted');
     }
