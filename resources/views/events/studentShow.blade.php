@@ -44,27 +44,37 @@
 				      	@if(!session('isPromoted') && !empty($codes))
 				      		<a href="#enterpromo" data-toggle="modal">Enter Promotional Code</a>
 				      	@endif
-				      	<form method="post" action="/events/{{$event->id}}/checkout">
+				      	<form id="checkoutForm" method="post" action="/events/{{$event->id}}/checkout">
 				      		{{csrf_field()}}
 				      	<p>Buy ticket  <strong>  {{$event->title}}</strong> 
 				      		<a style="padding-left:5em">
 					      	@if(session('isPromoted'))
 					      		<input type="hidden" name="promoCode" value="{{session('code')}}">
-				      			{{$price = $event->price * session('type')}}x1 +
-				      		@else	      		
+				      			{{$price = $event->price * session('type')}}x1 +      		
 				      		@endif
 				      			{{$price = $event->price}}
 				      			x
 				      		</a>
-				      		<select name="quantity">
-				      			@for($i = 0; $i <= 10; $i++)
-				      				<option value="{{$i}}">{{$i}}</option>
-				      			@endfor
+				      		<select onchange="validateQuantity()" name="quantity">
+				      			@if($event->slotsLeft>=5)
+					      			@for($i = 0; $i <= 5; $i++)
+					      				<option value="{{$i}}">{{$i}}</option>
+					      			@endfor
+					      		@else
+					      			@for($i = 0; $i <= $event->slotsLeft ; $i++)
+					      				<option value="{{$i}}">{{$i}}</option>
+					      			@endfor
+					      		@endif
 				      		</select>
 				      	</p>
 
 				      	<input type="hidden" name="type" value="{{session('type')}}">
-				      	<button type="submit">Checkout</button>
+				      	@if(session('isPromoted'))
+				      		<button id="checkoutButton" type="submit">Checkout</button>
+				      	@else
+				      		<button style="display:none;" id="checkoutButton" type="submit">Checkout</button>
+				      	@endif
+				      	
 				      	</form>
 
 				      </div>

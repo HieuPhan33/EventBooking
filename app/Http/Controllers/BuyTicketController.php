@@ -26,17 +26,15 @@ class BuyTicketController extends MailController
     	DB::table('buy')->insert(
     		['eventID'=>$eventID, 'userID' => auth()->user()->id , 'quantity' => $quantity , 'total' => $total]
     	);
-        DB::table('events')->where('id',$eventID)->decrement('slotsLeft');
-    	// DB::table('booking')->insert(
-    	// 	['eventID'=>$eventID, 'userID' => auth()->user()->id]
-    	// );
+        DB::table('events')->where('id',$eventID)->decrement('slotsLeft',$quantity);
+
         //Delete the Promotional Code if user enters
         if($code != null){
             DB::table('promo_codes')->where('id','=',$code)->delete();
         }
         //Remove this user out of event queue if he has joined in
         $affectedRows = DB::delete("DELETE FROM queue WHERE eventID = ? AND userID = ?",[$request->eventID , auth()->user()->id]);
-        $this->bookingNotify($request,$eventID);
-    	return redirect('/events/'.$eventID.'/student')->with('success','Successfully buy ticket');
+        $this->receiptBuyTickets($request,$eventID);
+    	return redirect('/events')->with('success','Successfully buy ticket');
     }
 }

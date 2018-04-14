@@ -498,6 +498,20 @@ function validatePromoCode(codes){
 	return isValid;
 }
 
+function validateCheckout(){
+	return false;
+}
+
+function validateQuantity(){
+	var promoCode = $("#checkoutForm input[name='promoCode']").val();
+	var quantity = $("#checkoutForm select[name='quantity']").find(":selected").val();
+	$("#checkoutButton").hide();
+	if(quantity > 0 || promoCode != null){
+		$("#checkoutButton").show();
+	}
+}
+
+
 function addCodes(){
 	var index = $("#numOfCodes").val();
 	index++;

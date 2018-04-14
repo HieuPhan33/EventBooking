@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Event;
+use App\Mail\sendReceipt;
 use App\Mail\sendBookingNoti;
 use App\Mail\sendCancelingNoti;
 use App\Mail\sendInvitation;
@@ -27,7 +28,7 @@ class MailController extends Controller
             "SELECT id , title , location , time ,'".auth()->user()->name."' AS username 
             FROM events
             WHERE events.id = ?",
-            [$eventID , auth()->user()->id]
+            [$eventID]
         );
     	Mail::to($request->user())
     	->queue(new sendBookingNoti($event[0]));
@@ -36,7 +37,17 @@ class MailController extends Controller
 
     //Send Receipt when users buy tickets
     public function receiptBuyTickets(Request $request,$eventID){
-        
+        $event = DB::select(
+            "SELECT title, location, time ,'".auth()->user()->name."' AS username, total, quantity
+            FROM events INNER JOIN buy
+            ON events.id = buy.eventID
+            WHERE events.id = ? AND buy.userID = ?
+            ORDER BY buy.created_at DESC",
+            [$eventID, auth()->user()->id]
+        );
+        Mail::to($request->user())
+        ->queue(new sendReceipt($event[0]));
+        return $event;
     }
 
     //Notify users of canceling receipt
