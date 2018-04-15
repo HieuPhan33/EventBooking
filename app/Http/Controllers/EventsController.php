@@ -30,7 +30,7 @@ class EventsController extends MailController
                  FROM events INNER JOIN categories
                 ON events.category = categories.id
                  WHERE time >= ? AND hostID = ? AND isFinalized = false
-                ORDER BY time ASC',[auth()->user()->id,auth()->user()->id,auth()->user()->id, date("Y-m-d H:i:s"),auth()->user()->id]);
+                ORDER BY time ASC',[date("Y-m-d H:i:s"),auth()->user()->id]);
         }
         //When user is manager
         else if(auth()->user()->role == 0){
@@ -180,6 +180,8 @@ class EventsController extends MailController
         }
         $event->price = $price;
         $event->save();
+        // Send events to whom interested
+        $this->sendEventToUsers($eventID,$event->category);
         $eventID = DB::getPdo()->lastInsertId();
         $numOfCodes = $request->input('numOfCodes');
         if($numOfCodes != 0){
@@ -199,12 +201,11 @@ class EventsController extends MailController
                     $promoCode->save();
                 }
             }
+            //Send promotional code to the keenest user
+            $this->sendPromoCode($eventID);
         }
 
-        // Send events to whom interested
-        $this->sendEventToUsers($eventID,$event->category);
         return redirect('/events')->with('success','Event Created');
-
     }
     // Send new events information to whom interested 
     public function sendEventToUsers($eventID,$category){
@@ -224,9 +225,11 @@ class EventsController extends MailController
 
     public function showToManager($id){
         $event = DB::select(
-            'SELECT title, promoCode, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time
+            'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time, promo_codes.id as isPromoted 
             FROM events INNER JOIN categories
             ON events.category = categories.id
+            LEFT JOIN promo_codes
+            ON events.id = promo_codes.eventID
             WHERE events.id = ?',[$id]
         );
         return view('events.managerShow')->with('event',$event[0]);
@@ -322,10 +325,7 @@ class EventsController extends MailController
                 ,true,false) AS isBookmarked,
                 IF(id IN(
                     SELECT eventID FROM queue WHERE userID = '.auth()->user()->id.")
-                ,true,false) AS isEnqueued,
-                IF(id IN(
-                    SELECT eventID FROM Promo WHERE userID = ".auth()->user()->id.")
-                ,true,false) AS isPromoted
+                ,true,false) AS isEnqueued
                 FROM events
                  WHERE time >= '".date("Y-m-d H:i:s")."'";
         //If users enter keywords
@@ -359,6 +359,16 @@ class EventsController extends MailController
         $entries = $this->arrayPaginator($events,$request);
         return view('pages.index')->with('events',$entries);
     }
+
+    public function listPromoCodes(Request $request){
+        $eventID = $_REQUEST['eventID'];
+        $promoCodes = DB::select('
+            SELECT id,type FROM promo_codes
+            WHERE eventID = ?',[$eventID]);
+        $promoCodes = json_encode($promoCodes);
+        return $promoCodes;
+    }
+
     protected function arrayPaginator($array, $request)
     {
         $page = Input::get('page', 1);

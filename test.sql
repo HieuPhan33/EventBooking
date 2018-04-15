@@ -86,3 +86,26 @@ ORDER BY time ASC;
 -- Emails of whom interested in particular event category
 SELECT email, categoryID FROM subscribe INNER JOIN users
 ON subscribe.userID = users.id
+
+-- Select email of person who has made the most profit 
+SELECT email, id FROM users WHERE id = 
+(SELECT userID 
+FROM buy
+GROUP BY userID
+ORDER BY total DESC
+LIMIT 1);
+
+-- Select random promocode of an event
+SELECT title,location,time, A.id as promoCode from events INNER JOIN
+(SELECT id, eventID FROM promo_codes
+WHERE eventID = 757
+ORDER BY RAND()
+LIMIT 1) A
+on events.id = A.eventID;
+
+-- Check if event has promo code
+SELECT events.id, events.title, promo_codes.id as isPromoted 
+FROM events LEFT JOIN promo_codes
+ON events.id = promo_codes.eventID
+WHERE events.id=757
+LIMIT 1;

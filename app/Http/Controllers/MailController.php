@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Event;
+use App\Mail\sendPromoCodeNoti;
 use App\Mail\sendReceipt;
 use App\Mail\sendBookingNoti;
 use App\Mail\sendCancelingNoti;
@@ -159,5 +160,26 @@ class MailController extends Controller
         Mail::to($emails[$i])->send(new sendFollowUp($input));
       }
       return redirect('/events');
+    }
+
+    public function sendPromoCode($eventID){
+        $email = DB::select(
+            'SELECT email,name FROM users WHERE id = 
+                (SELECT userID 
+                FROM buy
+                GROUP BY userID
+                ORDER BY total DESC
+                LIMIT 1)');
+        $promoCode = DB::select(
+            "SELECT events.id as eventID, title,location,time, A.type, A.id as promoCode,'".$email[0]->name."' AS username 
+             FROM events INNER JOIN
+            (SELECT id, eventID, type FROM promo_codes
+            WHERE eventID = ?
+            ORDER BY RAND()
+            LIMIT 1) A
+            on events.id = A.eventID",[$eventID]);
+        Mail::to($email[0]->email)
+        ->queue(new sendPromoCodeNoti($promoCode[0]));
+
     }
 }

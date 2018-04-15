@@ -29,61 +29,6 @@ function cancelBookmark(id){
 	});
 }
 
-// function sendBookingMail(eventId){
-// 	document.getElementById("book"+eventId).style.pointerEvents = 'none';
-// 	console.log('start sending booking receipt');
-// 	$.ajax({
-// 		type:'POST',
-// 		url:'/mail/bookingNotify',
-// 		headers: {
-//     	'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-//   		},
-// 		data : { eventID : eventId }
-// 	}).done(function(msg){
-// 		console.log(msg);
-// 	});
-
-// 	$.ajax({
-// 		type:'POST',
-// 		url:'/mail/reminder',
-// 		headers: {
-//     	'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-//   		},
-// 		data : { eventID : eventId }
-// 	}).done(function(msg){
-// 		console.log(msg);
-// 	});
-// }
-
-// function sendCancelingMail(eventId){
-// 	document.getElementById("cancel"+eventId).style.pointerEvents = 'none';
-// 	console.log('start sending canceling confirmation');
-// 	$.ajax({
-// 		type:'POST',
-// 		url:'/mail/cancelingNotify',
-// 		headers: {
-//     	'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-//   		},
-// 		data : { eventID : eventId }
-// 	}).done(function(msg){
-// 		console.log(msg);
-// 	});
-// }
-
-// function sendJoinQueueMail(eventId){
-// 	document.getElementById("join"+eventId).style.pointerEvents = 'none';
-// 	console.log('start sending joining queue confirmation');
-// 	$.ajax({
-// 		type:'POST',
-// 		url:'/mail/joinQueueNotify',
-// 		headers: {
-//     	'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-//   		},
-// 		data : { eventID : eventId }
-// 	}).done(function(msg){
-// 		console.log(msg);
-// 	});
-// }
 
 function disable(id){
 	document.getElementById(id).style.pointerEvents = 'none';
@@ -498,16 +443,55 @@ function validatePromoCode(codes){
 	return isValid;
 }
 
-function validateCheckout(){
-	return false;
-}
-
 function validateQuantity(){
 	var promoCode = $("#checkoutForm input[name='promoCode']").val();
 	var quantity = $("#checkoutForm select[name='quantity']").find(":selected").val();
 	$("#checkoutButton").hide();
 	if(quantity > 0 || promoCode != null){
 		$("#checkoutButton").show();
+	}
+}
+
+function validatePrice(){
+	var price = $("#price").val();
+	//If price is not a number or price is less than or equal to 0, hide promotional code
+	if(isNaN(price) || price <= 0){
+		$("#addCodesBtn").hide();
+	}
+	else
+		$("#addCodesBtn").show();
+}
+
+function getPromoCodes(eventID){
+	$.ajax({
+		type:'GET',
+		url:'/events/listPromoCodes',
+		headers: {
+    	'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+  		},
+		data : {eventID : eventID}
+	}).done(function(JSONdata){
+		var codes = $.parseJSON(JSONdata);
+		listPromoCodes(codes);
+	});
+
+}
+
+function listPromoCodes(codes){
+	// $.each(codes, function(key,value){
+	// 	var discount = (1-value)*100;
+	// 	var text = "Code "+key +" discount "+discount+"\n";
+	// 	console.log(text);
+	// 	// $("<p>",text:"Code ")
+	// });
+	for(var i =0; i < codes.length; i++){
+		if(i > 20){
+			break;
+		}
+		var discount = Math.round((1-codes[i]['type'])*100);
+		var text = "Code "+codes[i]['id'] + " discount "+ discount +"%";
+		var textCode = $("<p>",{text: text});
+		$("#codesContainer").append(textCode);
 	}
 }
 

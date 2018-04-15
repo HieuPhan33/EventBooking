@@ -18,6 +18,7 @@ Route::get('/', function () {
 Route::get('/events/{id}/manager',['as'=>'events.showTomanager','uses'=>'EventsController@showTomanager']);
 Route::get('/events/{id}/student',['as'=>'events.showToStudent','uses'=>'EventsController@showToStudent']);
 Route::get('/events/{id}/host',['as'=>'events.showToHost','uses'=>'EventsController@showToHost']);
+Route::get('/events/listPromoCodes','EventsController@listPromoCodes');
 Route::get('/book','BookingController@book');
 Route::get('/cancel','BookingController@cancel');
 Route::get('/enqueue','BookingController@enqueue');
