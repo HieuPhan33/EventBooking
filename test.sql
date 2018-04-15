@@ -109,3 +109,9 @@ FROM events LEFT JOIN promo_codes
 ON events.id = promo_codes.eventID
 WHERE events.id=757
 LIMIT 1;
+
+SELECT categories.name, A.userID FROM categories LEFT JOIN
+(SELECT categoryID,userID FROM subscribe
+WHERE userID = 5) A
+ON categories.id = A.categoryID
+ORDER BY categories.name;

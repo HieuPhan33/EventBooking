@@ -452,15 +452,6 @@ function validateQuantity(){
 	}
 }
 
-function validatePrice(){
-	var price = $("#price").val();
-	//If price is not a number or price is less than or equal to 0, hide promotional code
-	if(isNaN(price) || price <= 0){
-		$("#addCodesBtn").hide();
-	}
-	else
-		$("#addCodesBtn").show();
-}
 
 function getPromoCodes(eventID){
 	$.ajax({
@@ -478,12 +469,6 @@ function getPromoCodes(eventID){
 }
 
 function listPromoCodes(codes){
-	// $.each(codes, function(key,value){
-	// 	var discount = (1-value)*100;
-	// 	var text = "Code "+key +" discount "+discount+"\n";
-	// 	console.log(text);
-	// 	// $("<p>",text:"Code ")
-	// });
 	for(var i =0; i < codes.length; i++){
 		if(i > 20){
 			break;
@@ -493,11 +478,58 @@ function listPromoCodes(codes){
 		var textCode = $("<p>",{text: text});
 		$("#codesContainer").append(textCode);
 	}
+	$("#listBtn").hide();
+	$("#closeListBtn").show();
+}
+
+function closeList(){
+	$("#codesContainer").text("");
+	$("#listBtn").show();
+	$("#closeListBtn").hide();
 }
 
 
+// function addCodes(){
+// 	var index = $("#numOfCodes").val();
+// 	index++;
+// 	var quantity = "quantity"+index;
+// 	console.log(index);
+// 	var quantityLabel = $("<label/>",{for:quantity,text:"quantity",class:"col-1 col-form-label"});
+// 	var containerDiv = $("<div>",{class:"form-group row"});
+// 	var div1 = $("<div/>",{class:"col-2"});
+// 	var quantityInput = $("<input/>",{
+// 		type:'text',
+// 		name:quantity,
+// 		id:quantity,
+// 		class:"form-control"
+// 	}).appendTo(div1);
+// 	var type = "type"+index;
+// 	var div2 = $("<div/>",{class:"col-1"});
+// 	var typeLabel = $("<label/>",{for:type,text:"Discount ",class:"col-1 col-form-label"}).appendTo(div2);
+// 	var div3 = $("<div/>",{class:"col-2"});
+// 	var selectType = $('<select>',{id:type,text:"type",name:type}).appendTo(div3);
+// 	for(var i = 1 ; i < 10; i++){
+// 		var val = 1-i/10;
+// 		var discountStr = i*10 + "%";
+// 		selectType.append($("<option>").attr('value',val).text(discountStr));
+// 	}
+// 	containerDiv.append(quantityLabel, div1, div2, div3);
+// 	$("#promoCodesContainer").append(containerDiv);
+// 	$("#numOfCodes").val(index);
+// }
+
+function validatePrice(){
+	var price = $("#price").val();
+	//If price is not a number or price is less than or equal to 0, hide promotional code
+	if(isNaN(price) || price <= 0){
+		$("[name='addCodesBtn']").hide();
+	}
+	else
+		$("[name='addCodesBtn']").show();
+}
+
 function addCodes(){
-	var index = $("#numOfCodes").val();
+	var index = $("[name='numOfCodes']").val();
 	index++;
 	var quantity = "quantity"+index;
 	console.log(index);
@@ -521,8 +553,8 @@ function addCodes(){
 		selectType.append($("<option>").attr('value',val).text(discountStr));
 	}
 	containerDiv.append(quantityLabel, div1, div2, div3);
-	$("#promoCodesContainer").append(containerDiv);
-	$("#numOfCodes").val(index);
+	$("[name='promoCodesContainer']").append(containerDiv);
+	$("[name='numOfCodes']").val(index);
 }
 
 

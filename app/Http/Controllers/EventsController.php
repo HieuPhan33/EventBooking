@@ -39,7 +39,7 @@ class EventsController extends MailController
                  FROM events INNER JOIN categories
                 ON events.category = categories.id
                  WHERE time >= ?
-                ORDER BY time ASC',[auth()->user()->id,auth()->user()->id,auth()->user()->id, date("Y-m-d H:i:s")]);
+                ORDER BY time ASC',[ date("Y-m-d H:i:s")]);
         }
         //When user is student
         else{
@@ -139,6 +139,7 @@ class EventsController extends MailController
      */
     public function create()
     {
+        //Pass along the list of hosts and categories
         $hosts = DB::select(
             'SELECT id , name FROM users WHERE role = 1'
         );
@@ -155,8 +156,6 @@ class EventsController extends MailController
      */
     public function store(Request $request)
     {
-        
-
         $this->validate($request,[
             'title'=>'required',
             'description'=>'required',
@@ -180,9 +179,9 @@ class EventsController extends MailController
         }
         $event->price = $price;
         $event->save();
+        $eventID = DB::getPdo()->lastInsertId();
         // Send events to whom interested
         $this->sendEventToUsers($eventID,$event->category);
-        $eventID = DB::getPdo()->lastInsertId();
         $numOfCodes = $request->input('numOfCodes');
         if($numOfCodes != 0){
             for($i = 1; $i <= $numOfCodes; $i++){
@@ -282,7 +281,15 @@ class EventsController extends MailController
      */
     public function edit($id)
     {
-        //
+        $event = DB::select('SELECT id,description,title, location, DATE_FORMAT(time,"%Y-%m-%d") AS time , capacity, price FROM events WHERE id = ?',[$id]);
+        //Pass along the list of hosts and categories
+        $hosts = DB::select(
+            'SELECT id , name FROM users WHERE role = 1'
+        );
+        $categories = DB::select(
+            'SELECT id,name FROM categories');
+        $data=['event'=>$event[0], 'hosts'=>$hosts, 'categories'=>$categories];
+        return view('events.edit')->with($data);
     }
 
     /**
@@ -294,7 +301,53 @@ class EventsController extends MailController
      */
     public function update(Request $request, $id)
     {
-        //
+        $this->validate($request,[
+            'title'=>'required',
+            'description'=>'required',
+            'location'=>'required',
+            'capacity'=>'required|integer',
+            'datetime'=>'required',
+            'price'=>'integer|nullable'
+        ]);
+        $event = Event::find($id);
+        $event->title = $request->input('title');
+        $event->time = $request->input('datetime');
+        $event->location = $request->input('location');
+        $event->description = $request->input('description');
+        $event->category = $request->input('category');
+        $event->hostID = $request->input('host');
+        $event->capacity = $request->input('capacity');
+        $event->slotsLeft = $request->input('capacity');
+        $price = $request->input('price');
+        if($price == null){
+            $price = 0;
+        }
+        $event->price = $price;
+        $event->save();
+        $numOfCodes = $request->input('numOfCodes');
+        if($numOfCodes != 0){
+            //Clear old promocodes
+            DB::table('promo_codes')->where('eventID','=',$id)->delete();
+            for($i = 1; $i <= $numOfCodes; $i++){
+                $quantityID = 'quantity'.$i;
+                $typeID = 'type'.$i;
+                $this->validate($request,[
+                    $quantityID=>'nullable|integer'
+                ]);
+                $quantity = $request->input($quantityID);
+                $type = $request->input($typeID);
+                if($quantity > 0){
+                    for($j = 1; $j <= $quantity; $j++){
+                        $promoCode = new PromoCode;
+                        $promoCode->id = $this->getRandomString();
+                        $promoCode->eventID = $id; 
+                        $promoCode->type = $type;
+                        $promoCode->save();
+                    }
+                }
+            }
+        }
+        return redirect('/events/'.$id.'/manager')->with('success','Event Updated');
     }
 
     /**
