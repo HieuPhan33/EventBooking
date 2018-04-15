@@ -76,8 +76,6 @@
 
 				<div name="promoCodesContainer"></div>
 				<button style="display:none" name="addCodesBtn" type="button" onClick="addCodes()">Add Promotional Code</button>
-
-
 				<input id="numOfCodes" name="numOfCodes" value="0" type="hidden">
 				<div class="form-group row">
 					{{Form::submit('Submit',['class'=>'btn btn-primary'])}}

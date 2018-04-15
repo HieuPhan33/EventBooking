@@ -26,16 +26,16 @@ class EventsController extends MailController
         //If user is an event host , only display events under his responsibility
         if(auth()->user()->role == 1){
             $events = DB::select(
-                'SELECT title, promoCode, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time 
+                'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time 
                  FROM events INNER JOIN categories
                 ON events.category = categories.id
                  WHERE time >= ? AND hostID = ? AND isFinalized = false
-                ORDER BY time ASC',[date("Y-m-d H:i:s"),auth()->user()->id]);
+                ORDER BY time ASC',[date("Y-m-d H:i:s", time()-60*60*24),auth()->user()->id]);
         }
         //When user is manager
         else if(auth()->user()->role == 0){
             $events = DB::select(
-                'SELECT title, promoCode, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time
+                'SELECT title,price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time
                  FROM events INNER JOIN categories
                 ON events.category = categories.id
                  WHERE time >= ?
@@ -47,7 +47,7 @@ class EventsController extends MailController
             //If db doesn't store preference of this user, just display according to timestamp
             if($orderedCategoryList == 0){
                 $events = DB::select(
-                    'SELECT title, promoCode, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , 
+                    'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , 
                     IF(events.id IN(
                         SELECT eventID FROM booking WHERE userID = ?)
                     ,true,false) AS isBooked,
@@ -68,7 +68,7 @@ class EventsController extends MailController
                     $categoryOrderStr = $categoryOrderStr.','.$category;
                 }
                 $events = DB::select(
-                    'SELECT title, promoCode, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , 
+                    'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , 
                     IF(events.id IN(
                         SELECT eventID FROM booking WHERE userID = ?)
                     ,true,false) AS isBooked,
@@ -271,6 +271,21 @@ class EventsController extends MailController
             $data['codes'] = $codes;
         }
         return view('events.studentShow')->with($data);
+    }
+
+    public function showStudentDashboard(){
+        $bookedEvents = DB::select(
+            'SELECT events.id, title, DATE_FORMAT(time,"%Y-%m-%d") AS time 
+            FROM events INNER JOIN booking
+            ON events.id = booking.eventID
+            WHERE time >= ? AND booking.userID = ?',[date("Y-m-d H:i:s"), auth()->user()->id]);
+        $bookmarkedEvents = DB::select(
+            'SELECT events.id, title, DATE_FORMAT(time,"%Y-%m-%d") AS time 
+            FROM events INNER JOIN bookmark
+            ON events.id = bookmark.eventID
+            WHERE time >= ? AND bookmark.userID = ?',[date("Y-m-d H:i:s"), auth()->user()->id]);
+        $data=['bookedEvents'=>$bookedEvents, 'bookmarkedEvents' => $bookmarkedEvents];
+        return view('studentDashboard')->with($data);
     }
 
     /**

@@ -12,7 +12,11 @@
                     <!-- Left Side Of Navbar -->
                   <ul class="navbar-nav mr-auto">
                     <li class="nav-item active">
-                      <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+                        @if(Auth::check() && auth()->user()->role == 2)
+                            <a class="nav-link" href="/studentDashboard">Home <span class="sr-only">(current)</span></a>
+                        @else
+                            <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+                        @endif
                     </li>
                     <li class="nav-item active">
                       <a class="nav-link" href="https://www.uow.edu.au/student/life/index.html">UoW Student Life</a>
