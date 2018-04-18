@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 Route::get('/', function () {
     return redirect('events');
 });
+Route::get('/test','NeuralNetworkController@test');
 Route::get('/studentDashboard','EventsController@showStudentDashboard');
 Route::get('/events/{id}/manager',['as'=>'events.showTomanager','uses'=>'EventsController@showTomanager']);
 Route::get('/events/{id}/student',['as'=>'events.showToStudent','uses'=>'EventsController@showToStudent']);

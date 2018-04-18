@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "6a2c652e72cb4d2d98c48b65459f043e",
+    "content-hash": "38eddaf774536541f61fdea8ce5611f7",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
@@ -1067,6 +1067,50 @@
                 "storage"
             ],
             "time": "2018-04-06T09:58:14+00:00"
+        },
+        {
+            "name": "mcordingley/linearalgebra",
+            "version": "2.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mcordingley/LinearAlgebra.git",
+                "reference": "94c48f37e227ae07c0c5e41d99abd35c34442fdb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mcordingley/LinearAlgebra/zipball/94c48f37e227ae07c0c5e41d99abd35c34442fdb",
+                "reference": "94c48f37e227ae07c0c5e41d99abd35c34442fdb",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.0.0"
+            },
+            "require-dev": {
+                "codeclimate/php-test-reporter": "dev-master",
+                "phpunit/phpunit": "^5.5.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MCordingley\\LinearAlgebra\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Michael Cordingley",
+                    "email": "Michael.Cordingley@gmail.com"
+                }
+            ],
+            "description": "Matrix math for PHP.",
+            "keywords": [
+                "linear-algebra",
+                "matrix"
+            ],
+            "time": "2017-08-23T18:59:16+00:00"
         },
         {
             "name": "monolog/monolog",
