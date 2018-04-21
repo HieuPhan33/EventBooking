@@ -13,8 +13,7 @@
         "laravel/tinker": "^1.0",
         "laravelcollective/html": "^5.4.0",
         "mcordingley/linearalgebra": "^2.2",
-        "php-ds/php-ds": "^1.2",
-        "gabordemooij/redbean": "dev-master"
+        "php-ds/php-ds": "^1.2"
     },
     "require-dev": {
         "filp/whoops": "^2.0",

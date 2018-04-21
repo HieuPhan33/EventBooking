@@ -174,3 +174,4 @@ ADD favoriteClubType TINYINT(1);
 SELECT stddev(age)
 FROM users
 WHERE id IN (SELECT userID from booking);
+

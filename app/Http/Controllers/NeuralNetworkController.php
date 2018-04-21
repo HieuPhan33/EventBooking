@@ -21,20 +21,20 @@ class NeuralNetworkController extends Controller
     public function guessIt(Request $request){
 
     	$flowerDataText = 'app\flowerData.txt';
-    	$flowerDataType = [0,0,0,0];
+    	$flowerDataType = [0,0,0,0,3];
     	$carDataText = 'app\carData.txt';
-    	$carDataType = [2,2,2,2,2,2];
+    	$carDataType = [2,2,2,2,2,2,3];
     	$wineDataText = 'app\wineData.txt';
-    	$wineDataType = [0,0,0,0,0,0,0,0,0,0,0,0,0];
-    	$data = $this->generateDataFromText($carDataType,$carDataText);
+    	$wineDataType = [0,0,0,0,0,0,0,0,0,0,0,0,0,3];
+    	$data = $this->generateDataFromText($flowerDataType,$flowerDataText);
 
-    	$inputs = $data[0];
-    	$targets = $data[1];
-    	$standardInput = $data[2];
-    	$standardOutput = $data[3];
-    	$n_inputs = $data[4];
-    	$n_outputs = $data[5];
-
+        $standardInput = $data[0];
+    	$inputs = $data[1];
+    	$targets = $data[2];
+    	$n_inputs = $data[3];
+    	$n_outputs = $data[4];
+        // print_r($targets);
+        // echo $n_outputs;
     	// $brain = new NeuralNetwork( $n_inputs , 4 , $n_outputs , 0.1 );
     	$brain = new NeuralNetwork( $n_inputs , 3 , $n_outputs , 0.1 );
     	$brain->train($inputs,$targets,20000);
@@ -74,10 +74,11 @@ class NeuralNetworkController extends Controller
     public function trainNN(){
     	
     	$data = $this->generateData();
-    	$inputs = $data[0];
-    	$targets = $data[1];
-    	$n_inputs = $data[2];
-    	$n_outputs = $data[3];
+        $standard_input = $data[0];
+        $inputs = $data[1];
+        $targets = $data[2];
+        $n_inputs = $data[3];
+        $n_outputs = $data[4];
     	$brain = new NeuralNetwork( $n_inputs , 2 , $n_outputs , 0.1 );
     	$brain->train($inputs,$targets,20000);
     	$count = 0;
@@ -93,16 +94,22 @@ class NeuralNetworkController extends Controller
     	}
     	echo "Total number of right guess ".$count;
     	$accuracy = $count / 100;
-    	$brain->store($accuracy);
+        $rs = DB::table('neuralnetwork')->select('accuracy')->first();
+        if($rs == null || ($accuracy*0.96) > $rs->accuracy){
+    	   $brain->store($accuracy);
+           $standard_input->store();
+        }
     }
 
     public function loadNN(){
-    	$data = $this->generateData();
-    	$inputs = $data[0];
-    	$targets = $data[1];
-    	$n_inputs = $data[2];
-    	$n_outputs = $data[3];
+        $standard_input = Standardizer::load();
+        $data = $standard_input->normalizeData();
+        $inputs = $data[0];
+        $targets = $data[1];
+        $n_inputs = sizeof($inputs[0]);
+        $n_outputs = sizeof($targets[0]);
     	$loadBrain = NeuralNetwork::load();
+
     	$count = 0;
     	for($a = 0; $a < 100; $a++){
     		$i = rand()%sizeof($inputs);
@@ -122,7 +129,7 @@ class NeuralNetworkController extends Controller
     	$targets = array();
     	$allStudents = DB::select('SELECT * from users where id IN (SELECT userID FROM booking)');
     	$i = 0;
-    	$dataType = [0,1,1,2,2];
+    	$dataType = [0,1,1,2,2,3];
     	foreach($allStudents as $student){
     		$studentID = $student->id;
     		$cnt = 0;
@@ -139,7 +146,6 @@ class NeuralNetworkController extends Controller
 			$data[$i][$cnt] = $student->favoriteClubType;
 			$cnt++;
 			//Get output
-			$targets[$i] = array();
     		$topPref = DB::select('
     			SELECT booking.userID , categories.id as category , count(*) as count
 				FROM booking INNER JOIN events 
@@ -151,16 +157,17 @@ class NeuralNetworkController extends Controller
 				ORDER BY count DESC
 				LIMIT 1',[$studentID]);
     		$prefValue = $topPref[0]->category - 1;
-    		$targets[$i][0] = $topPref[0]->category;
+    		$data[$i][$cnt] = $topPref[0]->category;
+            $cnt++;
     		$i++;
     	}
-    	$standardizerData = new Standardizer($data,$dataType);
-    	$standardizerTargets = new Standardizer($targets,[3]);
-    	$normalizedData = $standardizerData->normalizeData();
-    	$normalizedTargets = $standardizerTargets->normalizeData();
-    	// Return normalized data , normalized target , number of input_nodes of normalized data , number of output_nodes of normalized targets
-    	return [$normalizedData , $normalizedTargets,
-    			sizeof($normalizedData[0]) , $standardizerTargets->getTotalDistinctVal(0)];
+        $standardizerData = new Standardizer($data,$dataType);
+        $normalizedData = $standardizerData->normalizeData();
+        $normalized_input = $normalizedData[0];
+        $normalized_output = $normalizedData[1];
+        //Return standard to convert any new input data , normalized data , normalized target , number of input_nodes of normalized data , number of output_nodes of normalized targets
+        return [ $standardizerData , $normalized_input , $normalized_output,
+                sizeof($normalized_input[0]) , sizeof($normalized_output[0])];
 
     }
 
@@ -177,22 +184,18 @@ class NeuralNetworkController extends Controller
     		$data[$i] = array();
     		$targets[$i] = array();
     		for($j = 0 ; $j < sizeof($sample) ; $j++){
-    			if($j == $outputIndex){
-    				$targets[$i][0] = $sample[$j];
-	    		}
-	    		else{
-    				$data[$i][$j] = $sample[$j];
-    			}
+    			$data[$i][$j] = $sample[$j];
+
     		}
     		$i++;
     	}
     	$standardizerData = new Standardizer($data,$dataType);
-    	$standardizerTargets = new Standardizer($targets,[3]);
     	$normalizedData = $standardizerData->normalizeData();
-    	$normalizedTargets = $standardizerTargets->normalizeData();
+        $normalized_input = $normalizedData[0];
+        $normalized_output = $normalizedData[1];
     	//Return standard to convert any new input data , normalized data , normalized target , number of input_nodes of normalized data , number of output_nodes of normalized targets
-    	return [$normalizedData , $normalizedTargets, $standardizerData , $standardizerTargets, 
-    			sizeof($normalizedData[0]) , $standardizerTargets->getTotalDistinctVal(0)];
+    	return [$normalized_input , $normalized_output, $standardizerData , 
+    			sizeof($normalized_input[0]) , sizeof($normalized_output[0])];
    		
     }
 

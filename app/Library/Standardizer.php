@@ -17,7 +17,7 @@ class Standardizer{
 		$this->mean = array();
 		$this->stdDev = array();
 		$this->Dictionary = array();
-		for($i = 0 ; $i < $this->getTotalInput() ; $i++){
+		for($i = 0 ; $i < $this->getTotalEntry() ; $i++){
 			if($dataType[$i] == 0){
 				$this->mean[$i] = $this->getMean($i);
 				$this->stdDev[$i] = $this->getStdDev($i);
@@ -32,9 +32,16 @@ class Standardizer{
 		}
 	}
 
+	public static function load(){
+		$jsonStr = File::get(storage_path('app\standardizerData.txt'));
+		$result = json_decode($jsonStr);
+		$standardizer = new self($result->rawData,$result->dataType);
+		return $standardizer;
+	}
+
 	public function fillMissingValue($data){
 		for($i = 0 ; $i < $this->getTotalData() ; $i++){
-			for($j = 0 ; $j < $this->getTotalInput(); $j++){
+			for($j = 0 ; $j < $this->getTotalEntry(); $j++){
 				if($this->isMissing($i,$j)){
 					$data[$i][$j] =$this->getMean($j);
 				}
@@ -43,13 +50,22 @@ class Standardizer{
 		return $data;
 	}
 
+	public function fillMissingInput($input){
+		for($i = 0; $i < sizeof($input); $i++){
+			if(strcmp($input[$i] , '?') == 0){
+				$input[$i] = $this->mean[$i];
+			}
+		}
+		return $input;
+	}
+
 
 	public function getTotalData(){
 		return sizeof($this->rawData);
 	}
 
 	// Total number of input
-	public function getTotalInput(){
+	public function getTotalEntry(){
 		return sizeof($this->dataType);
 	}
 
@@ -135,21 +151,24 @@ class Standardizer{
 
 	public function normalizeData(){
 		$this->rawData = $this->fillMissingValue($this->rawData);
-		$result = array();
+		$result_input = array();
+		$result_output = array();
 		for($i = 0; $i < $this->getTotalData(); $i++){
-			$cnt = 0;
-			$result[$i] = array();
-			for($j = 0; $j < $this->getTotalInput(); $j++){
+			$cnt_input = 0;
+			$cnt_output = 0;
+			$result_input[$i] = array();
+			$result_output[$i] = array();
+			for($j = 0; $j < $this->getTotalEntry(); $j++){
 
 				// Normalize numerical value
 				if($this->dataType[$j] == 0){
-					$result[$i][$cnt] = $this->normalizeNumerical($this->rawData[$i][$j],$j);
-					$cnt++;
+					$result_input[$i][$cnt_input] = $this->normalizeNumerical($this->rawData[$i][$j],$j);
+					$cnt_input++;
 				}
 				// Normalize binary value
 				else if($this->dataType[$j] == 1){
-					$result[$i][$cnt] = $this->normalizeBinary($this->rawData[$i][$j],$j);
-					$cnt++;
+					$result_input[$i][$cnt_input] = $this->normalizeBinary($this->rawData[$i][$j],$j);
+					$cnt_input++;
 				}
 				//Normalize categorical value-x
 				else if($this->dataType[$j] == 2){
@@ -158,18 +177,17 @@ class Standardizer{
 					$totalDistinctValues = sizeof($this->Dictionary[$j]);
 					for($t = 0 ; $t < $totalDistinctValues - 1; $t++){		
 						if($storedValue == $totalDistinctValues - 1){
-							$result[$i][$cnt] = -1;
+							$result_input[$i][$cnt_input] = -1;
 						}
 						else{
 							if($storedValue == $t)
-								$result[$i][$cnt] = 1;
+								$result_input[$i][$cnt_input] = 1;
 							else
-								$result[$i][$cnt] = 0;
+								$result_input[$i][$cnt_input] = 0;
 						}
-						$cnt++;
+						$cnt_input++;
 					}
 				}
-
 				// Normalize categorical value-y
 				else if($this->dataType[$j] == 3){
 					$rawValue = $this->rawData[$i][$j];
@@ -177,45 +195,43 @@ class Standardizer{
 					$totalDistinctValues = sizeof($this->Dictionary[$j]);
 					for($t = 0 ;$t < $totalDistinctValues ; $t++){
 						if($storedValue == $t)
-							$result[$i][$cnt] = 1;
+							$result_output[$i][$cnt_output] = 1;
 						else
-							$result[$i][$cnt] = 0;
-						$cnt++;
+							$result_output[$i][$cnt_output] = 0;
+						$cnt_output++;
 					}
 				}
 			}
 		}
-		return $result;
+		return [$result_input,$result_output];
 	}
 
-	public function NormalizeFromData($data){
-		$data = $this->fillMissingValue($data);
+	public function normalizeInput($input){
+		$input = $this->fillMissingInput($input);
 		$result = array();
 		$cnt = 0;
-		for($j = 0; $j < $this->getTotalInput(); $j++){
+		for($i = 0; $i < sizeof($input); $i++){
 			// Normalize numerical value
-			if($this->dataType[$j] == 0){
-				$result[$cnt] = $this->normalizeNumerical($data[$j],$j);
+			if($this->dataType[$i] == 0){
+				$result[$cnt] = $this->normalizeNumerical($input[$i],$i);
 				$cnt++;
 			}
 			// Normalize binary value
-			else if($this->dataType[$j] == 1){
-				$result[$cnt] = $this->normalizeBinary($data[$j],$j);
+			else if($this->dataType[$i] == 1){
+				$result[$cnt] = $this->normalizeBinary($input[$i],$i);
 				$cnt++;
 			}
 			//Normalize categorical value-x
-			else if($this->dataType[$j] == 2){
-				// print_r($distinctValues);
-				// echo "<br>";
-				$rawValue = $data[$j];
-				$storedValue = $this->Dictionary[$j][$rawValue];
-				$totalDistinctValues = sizeof($this->Dictionary[$j]);
-				for($t = 0 ; $t < $totalDistinctValues - 1; $t++){		
-					if($storedValue == $totalDistinctValues - 1){
+			else if($this->dataType[$i] == 2){
+				$rawValue = $input[$i];
+				$storedValue = $this->Dictionary[$i][$rawValue];
+				$totalDistinctValues = sizeof($this->Dictionary[$i]);
+				for($j = 0 ; $j < $totalDistinctValues - 1; $j++){		
+					if($storedValue == ($totalDistinctValues - 1)){
 						$result[$cnt] = -1;
 					}
 					else{
-						if($storedValue == $t)
+						if($storedValue == $j)
 							$result[$cnt] = 1;
 						else
 							$result[$cnt] = 0;
@@ -229,12 +245,10 @@ class Standardizer{
 
 	// Revert to original output from array of output returned by neural network
 	public function revertOutput($NNOutput){
-		if($this->getTotalInput() > 1 || $this->dataType[0] != 3){
-			throw new Exception('Standardizer must be of outputs');
-		}
 		//Pick the node with highest probability
 		$output_node = array_keys($NNOutput, max($NNOutput))[0];
-		$originalOutput = array_search($output_node,$this->Dictionary[0]);
+		$output_column = $this->getTotalEntry() - 1;
+		$originalOutput = array_search($output_node,$this->Dictionary[$output_column]);
 		return $originalOutput;
 		
 	}
@@ -243,10 +257,6 @@ class Standardizer{
 		$array = get_object_vars($this);
 		$json = json_encode($array);
 		File::put(storage_path('app\standardizerData.txt'),$json);
-		// $str = '';
-		// for($i = 0 ; $i < $this->getTotalInput(); $i++){
-		// 	$str = '{'
-		// }
 	}
 
 

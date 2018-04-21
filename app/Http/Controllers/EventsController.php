@@ -4,14 +4,16 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\File;
+use App\Library\NeuralNetwork;
+use App\Library\Standardizer;
 use App\Event;
 use App\PromoCode;
+use Storage;
 use DB;
 
 class EventsController extends MailController
 {
-
     public function __construct()
     {
         $this->middleware('auth');
@@ -43,6 +45,10 @@ class EventsController extends MailController
         }
         //When user is student
         else{
+            // $topPref = $this->getTopPreference();
+            // if($topPref != 0){
+            //     $orderedCategoryList = $this->getCategoryListByPreference($topPref);
+            // }
             $orderedCategoryList = $this->getCategoryListByPreference();
             //If db doesn't store preference of this user, just display according to timestamp
             if($orderedCategoryList == 0){
@@ -89,6 +95,21 @@ class EventsController extends MailController
         return view('pages.index')->with('events',$entries);
     }
 
+    public function getTopPreference(){
+        $topPref = 0;
+        $rs = DB::select(
+            'SELECT category , count(*) as count
+            FROM booking INNER JOIN events 
+            ON booking.eventID = events.id
+            WHERE userID = ?
+            GROUP BY userID, category
+            ORDER BY count DESC
+            LIMIT 1',[auth()->user()->id]);
+        if(count($rs) > 0)
+            $topPref = $rs[0]->category;
+        return $topPref;
+    }
+
     public function getCategoryListByPreference(){
             $rs = DB::select(
                 'SELECT category , count(*) as count
@@ -133,7 +154,14 @@ class EventsController extends MailController
     }
 
     public function predictUserPreference(){
-        // $result = DB::select('select ')
+        $result = DB::select('SELECT age, sex, studentType, degree, favoriteClubType FROM users WHERE id = ?',[auth()->user()->id]);
+        $input = [$result[0]->age, $result[0]->sex, $result[0]->studentType, $result[0]->degree, $result[0]->favoriteClubType];
+        $data_standardizer = Standardizer::load();
+        $normalized_input = $data_standardizer->normalizeInput($input);
+        $brain = NeuralNetwork::load();
+        $guess = $brain->feedForward($normalized_input);
+        $result = $data_standardizer->revertOutput($guess);
+        return $result;
     }
 
     /**
