@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Input;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use App\Library\NeuralNetwork;
 use App\Library\Standardizer;
 use App\Event;
@@ -45,51 +46,31 @@ class EventsController extends MailController
         }
         //When user is student
         else{
-            // $topPref = $this->getTopPreference();
-            // if($topPref != 0){
-            //     $orderedCategoryList = $this->getCategoryListByPreference($topPref);
-            // }
-            $orderedCategoryList = $this->getCategoryListByPreference();
-            //If db doesn't store preference of this user, just display according to timestamp
-            if($orderedCategoryList == 0){
-                $events = DB::select(
-                    'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , 
-                    IF(events.id IN(
-                        SELECT eventID FROM booking WHERE userID = ?)
-                    ,true,false) AS isBooked,
-                    IF(events.id IN(
-                        SELECT eventID FROM bookmark WHERE userID = ?)
-                    ,true,false) AS isBookmarked,
-                    IF(events.id IN(
-                        SELECT eventID FROM queue WHERE userID = ?)
-                    ,true,false) AS isEnqueued
-                     FROM events INNER JOIN categories
-                    ON events.category = categories.id
-                     WHERE time >= ?
-                    ORDER BY time ASC',[auth()->user()->id,auth()->user()->id,auth()->user()->id, date("Y-m-d H:i:s")]);
+            $topPref = $this->getTopPreference();
+            if($topPref == 0){
+                $topPref = $this->predictUserPreference();
             }
-            else{
-                $categoryOrderStr='';
-                foreach($orderedCategoryList as $category){
-                    $categoryOrderStr = $categoryOrderStr.','.$category;
-                }
-                $events = DB::select(
-                    'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , 
-                    IF(events.id IN(
-                        SELECT eventID FROM booking WHERE userID = ?)
-                    ,true,false) AS isBooked,
-                    IF(events.id IN(
-                        SELECT eventID FROM bookmark WHERE userID = ?)
-                    ,true,false) AS isBookmarked,
-                    IF(events.id IN(
-                        SELECT eventID FROM queue WHERE userID = ?)
-                    ,true,false) AS isEnqueued
-                     FROM events INNER JOIN categories
-                    ON events.category = categories.id
-                     WHERE time >= ?
-                    ORDER BY field(events.category'.$categoryOrderStr."), time ASC",[auth()->user()->id,auth()->user()->id,auth()->user()->id, date("Y-m-d H:i:s")]);
+            $orderedCategoryList = $this->getCategoryListByPreference($topPref);
+            $categoryOrderStr='';
+            foreach($orderedCategoryList as $category){
+                $categoryOrderStr = $categoryOrderStr.','.$category;
+            }
+            $events = DB::select(
+                'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , 
+                IF(events.id IN(
+                    SELECT eventID FROM booking WHERE userID = ?)
+                ,true,false) AS isBooked,
+                IF(events.id IN(
+                    SELECT eventID FROM bookmark WHERE userID = ?)
+                ,true,false) AS isBookmarked,
+                IF(events.id IN(
+                    SELECT eventID FROM queue WHERE userID = ?)
+                ,true,false) AS isEnqueued
+                 FROM events INNER JOIN categories
+                ON events.category = categories.id
+                 WHERE time >= ?
+                ORDER BY field(events.category'.$categoryOrderStr."), time ASC",[auth()->user()->id,auth()->user()->id,auth()->user()->id, date("Y-m-d H:i:s")]);
 
-            }
         }
         $entries = $this->arrayPaginator($events,$request);
         return view('pages.index')->with('events',$entries);
@@ -110,51 +91,38 @@ class EventsController extends MailController
         return $topPref;
     }
 
-    public function getCategoryListByPreference(){
-            $rs = DB::select(
-                'SELECT category , count(*) as count
-                FROM booking INNER JOIN events 
-                ON booking.eventID = events.id
-                WHERE userID = ?
-                GROUP BY userID, category
-                ORDER BY count DESC
-                LIMIT 1',[auth()->user()->id]);
-            if(count($rs)){
-                $rootCategory = $rs[0]->category;
-                $queue = new \Ds\Queue();
-                $queue->push($rootCategory);
-                $visited = array();
-                array_push($visited , $rootCategory);
-                $orderedCategoryList = array();
-                while(!$queue->isEmpty()){
-                    $currentNode = $queue->pop();
-                    array_push($orderedCategoryList, $currentNode);
-                    //Select all categories having relationship with current category node
-                    $subRs = DB::select(
-                            'SELECT categoryID2 FROM categoryRelationship
-                            WHERE categoryID1 = ?',[$currentNode]
-                    );
-                    //Loop through each related category node
-                    foreach($subRs as $relatedNode){
-                        $relatedCategory = $relatedNode->categoryID2;
-                        //If we encounter a new category node , add to the queue
-                        if (!in_array($relatedCategory, $visited)){
-                            $queue->push($relatedCategory);
-                            //Mark as visited
-                            array_push($visited, $relatedCategory);
-                        }
-                    }
+    public function getCategoryListByPreference($rootCategory){
+        $queue = new \Ds\Queue();
+        $queue->push($rootCategory);
+        $visited = array();
+        array_push($visited , $rootCategory);
+        $orderedCategoryList = array();
+        while(!$queue->isEmpty()){
+            $currentNode = $queue->pop();
+            array_push($orderedCategoryList, $currentNode);
+            //Select all categories having relationship with current category node
+            $subRs = DB::select(
+                    'SELECT categoryID2 FROM categoryRelationship
+                    WHERE categoryID1 = ?',[$currentNode]
+            );
+            //Loop through each related category node
+            foreach($subRs as $relatedNode){
+                $relatedCategory = $relatedNode->categoryID2;
+                //If we encounter a new category node , add to the queue
+                if (!in_array($relatedCategory, $visited)){
+                    $queue->push($relatedCategory);
+                    //Mark as visited
+                    array_push($visited, $relatedCategory);
                 }
-                return $orderedCategoryList;
             }
-            else{
-                return 0;
-            }
-
+        }
+        return $orderedCategoryList;
     }
 
     public function predictUserPreference(){
         $result = DB::select('SELECT age, sex, studentType, degree, favoriteClubType FROM users WHERE id = ?',[auth()->user()->id]);
+        // Display console for demo purpose
+        echo '<script> console.log('.json_encode($result[0]).')</script>';
         $input = [$result[0]->age, $result[0]->sex, $result[0]->studentType, $result[0]->degree, $result[0]->favoriteClubType];
         $data_standardizer = Standardizer::load();
         $normalized_input = $data_standardizer->normalizeInput($input);

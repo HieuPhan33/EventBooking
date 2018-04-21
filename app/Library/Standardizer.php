@@ -39,6 +39,11 @@ class Standardizer{
 		return $standardizer;
 	}
 
+
+	public function isMissing($row,$column){
+		return (strcmp($this->rawData[$row][$column] , '?') == 0) || (is_null($this->rawData[$row][$column]));
+	}
+
 	public function fillMissingValue($data){
 		for($i = 0 ; $i < $this->getTotalData() ; $i++){
 			for($j = 0 ; $j < $this->getTotalEntry(); $j++){
@@ -52,7 +57,7 @@ class Standardizer{
 
 	public function fillMissingInput($input){
 		for($i = 0; $i < sizeof($input); $i++){
-			if(strcmp($input[$i] , '?') == 0){
+			if(strcmp($input[$i] , '?') == 0 or $input[$i] == null){
 				$input[$i] = $this->mean[$i];
 			}
 		}
@@ -77,9 +82,6 @@ class Standardizer{
 		return sizeof($this->Dictionary[$column]);
 	}
 
-	public function isMissing($row,$column){
-		return (strcmp($this->rawData[$row][$column] , '?') == 0);
-	}
 
 	public function getMean($column){
 		$sum = 0;
@@ -112,6 +114,24 @@ class Standardizer{
 		return sqrt($sum / ($this->getTotalData()-1));
 	}
 
+	public function getDistinctValues($column){
+		if($this->dataType[$column] != 1 && $this->dataType[$column] != 2 && $this->dataType[$column] != 3){
+			throw new Exception('Error while normalizing column '.$column.', only categorical values need total distinct value');
+		}
+		$distinctMap = array();
+		$cnt = 0;
+		for($i = 0; $i < $this->getTotalData() ; $i++){
+			$value = $this->rawData[$i][$column];	
+			if(!$this->isMissing($i,$column)){
+				if(!array_key_exists($value, $distinctMap)){
+					$distinctMap[$value] = $cnt;
+					$cnt++; 
+				}
+			}
+		}
+		return $distinctMap;
+	}
+
 	public function normalizeBinary($data,$column){
 		if($this->dataType[$column] != 1){
 			throw new Exception('Error while normalizing column '.$column.' data must be binary');
@@ -128,25 +148,6 @@ class Standardizer{
 		}
 		return ($data - $this->mean[$column])/($this->stdDev[$column]);
 
-	}
-
-	public function getDistinctValues($column){
-		if($this->dataType[$column] != 1 && $this->dataType[$column] != 2 && $this->dataType[$column] != 3){
-			throw new Exception('Error while normalizing column '.$column.', only categorical values need total distinct value');
-		}
-		$distinctMap = array();
-		$cnt = 0;
-		for($i = 0; $i < $this->getTotalData() ; $i++){
-			$value = $this->rawData[$i][$column];
-
-			if(!$this->isMissing($i,$column)){
-				if(!array_key_exists($value, $distinctMap)){
-					$distinctMap[$value] = $cnt;
-					$cnt++; 
-				}
-			}
-		}
-		return $distinctMap;
 	}
 
 	public function normalizeData(){

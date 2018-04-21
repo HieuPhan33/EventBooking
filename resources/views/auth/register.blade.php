@@ -71,10 +71,44 @@
                                 <input type="radio" name="role" value="1"/> Host
                             </label>
                             <label class="col-md-2 col-form-label text-md-right">
-                                <input type="radio" name="role" value="2"/> Undergraduate Student
+                                <input type="radio" name="role" value="2"/> Undergrad
                             </label>
                             <label class="col-md-2 col-form-label text-md-right">
-                                <input type="radio" name="role" value="3"/> Postgraduate Student
+                                <input type="radio" name="role" value="3"/> Postgrad
+                            </label>
+                        </div>
+
+                        <div class="form-group row">
+                            <label class="col-md-4 col-form-label text-md-right"> Sex
+                            </label>
+                            <label class="col-md-2 col-form-label text-md-right">
+                                <select name="sex" id="sex" class="form-control">
+                                    <option value="0"> Male</option>
+                                    <option value="1"> Female</option>
+                                </select>
+                            </label>
+                            <label class="col-md-2 col-form-label text-md-right">
+                                Age
+                            </label>
+                            <label class="col-md-1 col-form-label text-md-right">
+                                <input type="text" id="age" name="age"/>
+                            </label>
+                        </div>
+                        <div class ="form-group row">
+                            <label class="col-md-4 col-form-label text-md-right"> Degree
+                            </label>
+                            <label class="col-md-3 col-form-label text-md-right">
+                                <select name="degree" id="degree" class="form-control">
+                                    <option value="0"> CompSci </option>
+                                    <option value="1"> Engineer </option>
+                                    <option value="2"> Math </option>
+                                    <option value="3"> Biology </option>
+                                    <option value="4"> Law</option>
+                                    <option value="5"> Business </option>
+                                    <option value="6"> Language</option>
+                                    <option value="7">Media</option>
+                                    <option value = "8"> Arts </option>
+                                </select>
                             </label>
                         </div>
 
