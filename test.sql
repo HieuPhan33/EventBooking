@@ -1,5 +1,5 @@
 -- List out the event category preference of each user
-SELECT email, categories.name, count(*) as count
+SELECT users.id, categories.name, count(*) as count
 FROM booking INNER JOIN events 
 ON booking.eventID = events.id
 INNER JOIN categories
@@ -7,6 +7,30 @@ ON events.category = categories.id
 INNER JOIN users
 ON booking.userid = users.id
 GROUP BY email, categories.name;
+
+-- Select top preference of a particular user
+SELECT email, categories.id , categories.name, count(*) as count
+FROM booking INNER JOIN events 
+ON booking.eventID = events.id
+INNER JOIN categories
+ON events.category = categories.id
+INNER JOIN users
+ON booking.userid = users.id
+WHERE users.id = 54
+GROUP BY email, categories.name
+ORDER BY count DESC
+LIMIT 1;
+
+SELECT booking.userID , categories.id , count(*) as count
+FROM booking INNER JOIN events 
+ON booking.eventID = events.id
+INNER JOIN categories
+ON events.category = categories.id
+WHERE booking.userID = 4
+GROUP BY userID, categories.id
+ORDER BY count DESC
+LIMIT 1;
+
 
 -- List out the number of users booking in each category of events
 SELECT categories.name, count(*) 
@@ -110,8 +134,43 @@ ON events.id = promo_codes.eventID
 WHERE events.id=757
 LIMIT 1;
 
+-- Get category of events which the user has subscribed
 SELECT categories.name, A.userID FROM categories LEFT JOIN
 (SELECT categoryID,userID FROM subscribe
 WHERE userID = 5) A
 ON categories.id = A.categoryID
 ORDER BY categories.name;
+
+
+ALTER TABLE users
+ADD degree TINYINT(1);
+/*
+	CS,IT    		0
+	Engineer    	1
+	Math, Stat 		2
+	Biology			3
+	Law				4
+	BIT, Business   5 
+	Language		6
+	Media			7
+	Arts			8
+
+*/
+
+ALTER TABLE users
+ADD favoriteClubType TINYINT(1);
+/*
+	Academic			0
+	Community			1
+	Cultural			2
+	Professional		3
+	Political			4
+	Spiritual			5
+	Sport				6
+	Special Interests	7
+
+*/
+
+SELECT stddev(age)
+FROM users
+WHERE id IN (SELECT userID from booking);

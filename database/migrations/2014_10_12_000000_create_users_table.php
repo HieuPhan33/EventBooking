@@ -22,6 +22,11 @@ class CreateUsersTable extends Migration
             $table->boolean('isBanned')->default(false);
             $table->rememberToken();
             $table->timestamps();
+            $table->integer('age');
+            $table->tinyInteger('sex');
+            $table->tinyInteger('studentType');
+            $table->tinyInteger('degree');
+            $table->tinyInteger('favoriteClubType');
         });
     }
 

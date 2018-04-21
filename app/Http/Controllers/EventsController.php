@@ -132,6 +132,10 @@ class EventsController extends MailController
 
     }
 
+    public function predictUserPreference(){
+        // $result = DB::select('select ')
+    }
+
     /**
      * Show the form for creating a new resource.
      *

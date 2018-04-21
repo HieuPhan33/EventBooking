@@ -1,6 +1,7 @@
 <?php
 namespace App\Library;
 use MCordingley\LinearAlgebra\Matrix;
+use DB;
 
 
 
@@ -23,12 +24,43 @@ class NeuralNetwork{
 		$this->bias_ho->randomize();
 		$this->rate = $learning_rate;
  	}
+
+ 	public static function load(){
+ 		$resultNN = DB::select('SELECT * FROM neuralnetwork');
+ 		$brain = new self($resultNN[0]->n_inputs,$resultNN[0]->n_hiddens,$resultNN[0]->n_outputs,$resultNN[0]->learning_rate);
+ 		$resultWeights = DB::select('SELECT * FROM nnweights');
+ 		foreach($resultWeights as $edge){
+ 			$start_node = $edge->start_node;
+ 			$start = substr($start_node,1);
+ 			$end = substr($edge->end_node,1);
+ 			if($start_node[0] == 'i'){
+ 				$brain->weights_ih->set($start,$end,$edge->weight);
+ 			}
+ 			else{
+ 				$brain->weights_ho->set($start,$end,$edge->weight);
+ 			}
+ 		}
+ 		$resultBias = DB::select('SELECT * FROM bias');
+ 		foreach($resultBias as $bias){
+ 			$layer = $bias->layer;
+ 			$end = substr($bias->end_node,1);
+ 			if($layer == 'i'){
+ 				$brain->bias_ih->set(0,$end,$bias->weight);
+ 			}
+ 			else{
+ 				$brain->bias_ho->set(0,$end,$bias->weight);
+ 			}
+ 		}
+ 		return $brain;
+ 	}
  	public function sigmoid($x){
-		return 1/(1+exp(-$x));
+ 		return (1/(1+exp(-$x)));
+		// return (2/(1+exp(-$x))) - 1;
 	}
 
-	public function dsigmoid($sigmoid){
-		return $sigmoid*(1-$sigmoid);
+	public function dsigmoid($z){
+		return $z*(1-$z);
+		// return 1-$z*$z;
 	}
 
  	public function feedForward($input_array){
@@ -56,7 +88,7 @@ class NeuralNetwork{
  		$outputs = $hiddens->multiplyMatrix($this->weights_ho);
  		$outputs = $outputs->addMatrix($this->bias_ho);
  		$outputs = $outputs->map([$this,'sigmoid']);
- 		return $outputs->toArray();
+ 		return $outputs->to1DArray();
  	}
 
  	public function train($input_array,$target_array,$numberOfTrain){
@@ -134,13 +166,58 @@ class NeuralNetwork{
  			$gradients_h = $inputs_T->multiplyMatrix($gradients_h);
  			//Adjust weights in layer input-hidden
  			$this->weights_ih = $this->weights_ih->subtractMatrix($gradients_h);
- 			// $pred = Matrix::from2DArray($this->feedForward($input_array[$i]));
+ 			// $pred = Matrix::fromArray($this->feedForward($input_array[$i]));
  			// $pred->print();
  			// $errAfter = $pred->subtractMatrix($targets);
  			// echo "Error after <br>";
  			// $errAfter->print();
  		}
- 	}	
+ 	}
+
+ 	public function store($accuracy){
+ 		$rs = DB::table('neuralnetwork')->select('accuracy')->first();
+ 		if($rs == null || ($accuracy*0.96) > $rs->accuracy){
+ 			DB::table('neuralnetwork')->delete();
+ 			DB::table('nnweights')->delete();
+ 			DB::table('bias')->delete();
+			DB::table('neuralnetwork')->insert(['n_inputs'=>$this->n_inputs,'n_hiddens'=>$this->n_hiddens,'n_outputs'=>$this->n_outputs,'accuracy'=>$accuracy , 'learning_rate'=>$this->rate]);
+			//Save weights in input-hidden layer
+			$weights_ih = $this->weights_ih->toArray();
+			for($i = 0 ; $i < sizeof($weights_ih) ; $i++){
+				$start_node = 'i'.$i;
+				for($j = 0; $j < sizeof($weights_ih[0]); $j++){
+					$end_node = 'h'.$j;
+					DB::table('nnweights')->insert(['start_node'=>$start_node,'end_node'=>$end_node,'weight'=>$weights_ih[$i][$j]]);
+				}
+			}
+
+			// Save bias in input-hidden layer
+			$bias_ih = $this->bias_ih->to1DArray();
+			for($i = 0 ; $i < sizeof($bias_ih); $i++){
+				$end_node = 'h'.$i;
+				DB::table('bias')->insert(['layer'=>'i','end_node'=>$end_node,'weight'=>$bias_ih[$i]]);
+			}
+
+			//Save weights in hidden-output layer
+			$weights_ho = $this->weights_ho->toArray();
+			for($i = 0 ; $i < sizeof($weights_ho) ; $i++){
+				$start_node = 'h'.$i;
+				for($j = 0; $j < sizeof($weights_ho[0]); $j++){
+					$end_node = 'o'.$j;
+					DB::table('nnweights')->insert(['start_node'=>$start_node,'end_node'=>$end_node,'weight'=>$weights_ho[$i][$j]]);
+				}
+			}
+
+			// Save bias in hidden-output layer
+			$bias_ho = $this->bias_ho->to1DArray();
+			for($i = 0 ; $i < sizeof($bias_ho); $i++){
+				$end_node = 'o'.$i;
+				DB::table('bias')->insert(['layer'=>'h','end_node'=>$end_node,'weight'=>$bias_ho[$i]]);
+			}
+ 		}
+ 	}
+
+ 
 
 }
 
