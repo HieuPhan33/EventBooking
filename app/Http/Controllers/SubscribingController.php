@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use DB;
+use Carbon\Carbon;
 
 class SubscribingController extends Controller
 {
@@ -25,6 +26,8 @@ class SubscribingController extends Controller
         			"categoryID"=>$subscription,
         			"userID"=>auth()->user()->id]);
         	} 
+            $date = new Carbon();
+            DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'subscribed categories', 'timestamp'=>$date->toDateTimeString()]);
     	   return redirect('/events')->with('success','Succesfully subscribe, you will get email for upcoming interesting events');
         }
         else

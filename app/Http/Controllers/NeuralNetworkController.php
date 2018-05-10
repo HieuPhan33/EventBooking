@@ -33,9 +33,6 @@ class NeuralNetworkController extends Controller
     	$targets = $data[2];
     	$n_inputs = $data[3];
     	$n_outputs = $data[4];
-        // print_r($targets);
-        // echo $n_outputs;
-    	// $brain = new NeuralNetwork( $n_inputs , 4 , $n_outputs , 0.1 );
     	$brain = new NeuralNetwork( $n_inputs , 3 , $n_outputs , 0.1 );
     	$brain->train($inputs,$targets,20000);
     	$count = 0;
@@ -189,13 +186,13 @@ class NeuralNetworkController extends Controller
     		}
     		$i++;
     	}
-    	$standardizerData = new Standardizer($data,$dataType);
-    	$normalizedData = $standardizerData->normalizeData();
+        $standardizerData = new Standardizer($data,$dataType);
+        $normalizedData = $standardizerData->normalizeData();
         $normalized_input = $normalizedData[0];
         $normalized_output = $normalizedData[1];
-    	//Return standard to convert any new input data , normalized data , normalized target , number of input_nodes of normalized data , number of output_nodes of normalized targets
-    	return [$normalized_input , $normalized_output, $standardizerData , 
-    			sizeof($normalized_input[0]) , sizeof($normalized_output[0])];
+        //Return standard to convert any new input data , normalized data , normalized target , number of input_nodes of normalized data , number of output_nodes of normalized targets
+        return [ $standardizerData , $normalized_input , $normalized_output,
+                sizeof($normalized_input[0]) , sizeof($normalized_output[0])];
    		
     }
 

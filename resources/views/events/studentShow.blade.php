@@ -6,7 +6,7 @@
 	@else
 		<small role="button" class="btn btn-primary btn-sm" onClick="addBookmark(id)" id="{{$event->id}}" > Bookmark Event </small>
 	@endif
-    <h1> {{$event->title}} </h1>
+    <h1>{{$event->title}}</h1>
     <h2>Category :
     	<small>{{$event->category}}</small>
     </h2>
@@ -132,6 +132,7 @@
 			@endif
 		@endif
 	@endif
+
 
 
 @endsection

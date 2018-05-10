@@ -15,8 +15,10 @@ use Illuminate\Support\Facades\Mail;
 Route::get('/', function () {
     return redirect('events');
 });
-Route::get('/editText','NeuralNetworkController@editText');
-Route::get('/test','NeuralNetworkController@test');
+Route::get('/settings', 'UserManagementController@showSettings');
+Route::get('/updateSettings','UserManagementController@updateSettings');
+Route::get('/changePassword','UserManagementController@showChangingPasswordForm');
+Route::post('/changePassword','UserManagementController@changePassword')->name('changePassword');
 Route::get('/guessIt','NeuralNetworkController@guessIt');
 Route::get('/trainNN','NeuralNetworkController@trainNN');
 Route::get('/loadNN','NeuralNetworkController@loadNN');

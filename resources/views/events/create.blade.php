@@ -62,10 +62,43 @@
 
 				<div class="form-group row">
 					{{Form::label('datetime','Time',['class'=>'col-1 col-form-label'])}}
-					<div class="col-4">
+					<label class="col-md-2 col-form-label text-md-right">
 						{{Form::date('datetime','',['class'=>'form-control'])}}
-					</div>
+					</label>
+					<label class="col-md-1 col-form-label text-md-right">
+						<select class="form-control" name="hour">
+							<?php
+								for($i = 1; $i <= 12; $i++){
+									$i = sprintf("%02d",$i);
+							?>
+								<option value="{{$i}}">{{$i}}</option>
+							<?php
+								}
+							?>
+
+						</select>
+					</label>
+					<label class="col-md-1 col-form-label text-md-right">
+						<select class="form-control" name="minute">
+							<?php
+								for ($i = 0; $i <= 60; $i = $i+5){
+									$i = sprintf("%02d",$i);
+							?>
+									<option value="{{$i}}">{{$i}}</option>
+							<?php
+								}
+							?>
+						</select>
+					</label>
+					<label class="col-md-1 col-form-label text-md-right">
+						<select class="form-control" name="type">
+							<option value="0">AM</option>
+							<option value="1">PM</option>
+						</select>
+					</label>
+					
 				</div>
+
 
 				<div class="form-group row">
 					{{Form::label('price','price',['class'=>'col-1 col-form-label'])}}

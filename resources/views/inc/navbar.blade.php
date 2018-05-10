@@ -12,7 +12,7 @@
                     <!-- Left Side Of Navbar -->
                   <ul class="navbar-nav mr-auto">
                     <li class="nav-item active">
-                        @if(Auth::check() && auth()->user()->role == 2)
+                        @if(Auth::check() && auth()->user()->role >= 2)
                             <a class="nav-link" href="/studentDashboard">Home <span class="sr-only">(current)</span></a>
                         @else
                             <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
@@ -62,6 +62,9 @@
                                        onclick="event.preventDefault();
                                                      document.getElementById('logout-form').submit();">
                                         {{ __('Logout') }}
+                                    </a>
+                                    <a class="dropdown-item" href="/settings">
+                                        Account Setting
                                     </a>
 
                                     <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">

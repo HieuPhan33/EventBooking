@@ -12,6 +12,7 @@ use App\Event;
 use App\PromoCode;
 use Storage;
 use DB;
+use Carbon\Carbon;
 
 class EventsController extends MailController
 {
@@ -29,7 +30,7 @@ class EventsController extends MailController
         //If user is an event host , only display events under his responsibility
         if(auth()->user()->role == 1){
             $events = DB::select(
-                'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time 
+                'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y %H:%i") as time 
                  FROM events INNER JOIN categories
                 ON events.category = categories.id
                  WHERE time >= ? AND hostID = ? AND isFinalized = false
@@ -38,7 +39,7 @@ class EventsController extends MailController
         //When user is manager
         else if(auth()->user()->role == 0){
             $events = DB::select(
-                'SELECT title,price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time
+                'SELECT title,price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y %H:%i") as time
                  FROM events INNER JOIN categories
                 ON events.category = categories.id
                  WHERE time >= ?
@@ -56,7 +57,7 @@ class EventsController extends MailController
                 $categoryOrderStr = $categoryOrderStr.','.$category;
             }
             $events = DB::select(
-                'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , 
+                'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y %H:%i") as time , 
                 IF(events.id IN(
                     SELECT eventID FROM booking WHERE userID = ?)
                 ,true,false) AS isBooked,
@@ -72,6 +73,7 @@ class EventsController extends MailController
                 ORDER BY field(events.category'.$categoryOrderStr."), time ASC",[auth()->user()->id,auth()->user()->id,auth()->user()->id, date("Y-m-d H:i:s")]);
 
         }
+        echo "<script>console.log('The top preference is ".$events[0]->category."')</script>";
         $entries = $this->arrayPaginator($events,$request);
         return view('pages.index')->with('events',$entries);
     }
@@ -164,9 +166,16 @@ class EventsController extends MailController
             'datetime'=>'required',
             'price'=>'integer|nullable'
         ]);
+        $date = $request->input('datetime');
+        $hr =$request->input('hour');
+        $minute = $request->input('minute');
+        if ($request->input('type') == 1)
+            $hr += 12;
+        $hr %= 24;
+        $datetime = $date." ".$hr.":".$minute.":00";
         $event = new Event;
         $event->title = $request->input('title');
-        $event->time = $request->input('datetime');
+        $event->time = $datetime;
         $event->location = $request->input('location');
         $event->description = $request->input('description');
         $event->category = $request->input('category');
@@ -180,6 +189,8 @@ class EventsController extends MailController
         $event->price = $price;
         $event->save();
         $eventID = DB::getPdo()->lastInsertId();
+        $dt = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'created event '.$event->title, 'timestamp'=>$dt->toDateTimeString()]);
         // Send events to whom interested
         $this->sendEventToUsers($eventID,$event->category);
         $numOfCodes = $request->input('numOfCodes');
@@ -223,8 +234,11 @@ class EventsController extends MailController
      */
 
     public function showToManager($id){
+        if(auth()->user()->role  != 0){
+            return redirect('/');
+        }
         $event = DB::select(
-            'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time, promo_codes.id as isPromoted 
+            'SELECT title, price, categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y %H:%i") as time, promo_codes.id as isPromoted 
             FROM events INNER JOIN categories
             ON events.category = categories.id
             LEFT JOIN promo_codes
@@ -235,6 +249,9 @@ class EventsController extends MailController
     }
 
     public function showToHost($id){
+        if(auth()->user()->role != 1){
+            return redirect('/');
+        }
         $users = DB::select(
             'SELECT id, users.name , users.email, eventID
             FROM users JOIN booking
@@ -245,8 +262,11 @@ class EventsController extends MailController
     }
 
     public function showToStudent($id){
+        if(auth()->user()->role != 2 && auth()->user()->role != 3){
+            return redirect('/');
+        }
         $event = DB::select(
-            'SELECT title, price , categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time , IF(events.id IN(
+            'SELECT title, price , categories.name as category, description , slotsLeft, events.id as id, location ,  DATE_FORMAT(time, "%W %e %M %Y %H:%i") as time , IF(events.id IN(
                 SELECT eventID FROM booking WHERE userID = ?)
             ,true,false) AS isBooked,
             IF(events.id IN(
@@ -296,14 +316,18 @@ class EventsController extends MailController
      */
     public function edit($id)
     {
-        $event = DB::select('SELECT id,description,title, location, DATE_FORMAT(time,"%Y-%m-%d") AS time , capacity, price FROM events WHERE id = ?',[$id]);
+        $event = DB::select('SELECT id,description,title, location, DATE_FORMAT(time,"%Y-%m-%d %H:%i") AS time , capacity, price FROM events WHERE id = ?',[$id]);
+        $dt = new Carbon($event[0]->time);
+        $date =  $dt->toDateString();
+        $hr = sprintf("%02d",$dt->hour);
+        $minute = sprintf("%02d",$dt->minute);
         //Pass along the list of hosts and categories
         $hosts = DB::select(
             'SELECT id , name FROM users WHERE role = 1'
         );
         $categories = DB::select(
             'SELECT id,name FROM categories');
-        $data=['event'=>$event[0], 'hosts'=>$hosts, 'categories'=>$categories];
+        $data=['event'=>$event[0], 'hosts'=>$hosts, 'categories'=>$categories,'date'=>$date,'hour'=>$hr,'minute'=>$minute];
         return view('events.edit')->with($data);
     }
 
@@ -324,9 +348,16 @@ class EventsController extends MailController
             'datetime'=>'required',
             'price'=>'integer|nullable'
         ]);
+        $date = $request->input('datetime');
+        $hr =$request->input('hour');
+        $minute = $request->input('minute');
+        if ($request->input('type') == 1)
+            $hr += 12;
+        $hr %= 24;
+        $datetime = $date." ".$hr.":".$minute.":00";
         $event = Event::find($id);
         $event->title = $request->input('title');
-        $event->time = $request->input('datetime');
+        $event->time = $datetime;
         $event->location = $request->input('location');
         $event->description = $request->input('description');
         $event->category = $request->input('category');
@@ -339,6 +370,8 @@ class EventsController extends MailController
         }
         $event->price = $price;
         $event->save();
+        $date = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'updated event '.$event->title, 'timestamp'=>$date->toDateTimeString()]);
         $numOfCodes = $request->input('numOfCodes');
         if($numOfCodes != 0){
             //Clear old promocodes
@@ -379,12 +412,14 @@ class EventsController extends MailController
         DB::table('promo_codes')->where('eventID','=',$id)->delete();
         DB::table('absent')->where('eventID','=',$id)->delete();
         DB::table('events')->where('id','=',$id)->delete();
+        $date = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'deleted event '.$event->title, 'timestamp'=>$date->toDateTimeString()]);
         return redirect('/events')->with('success','Event Deleted');
     }
     public function search(Request $request)
     {
 
-        $sql = 'SELECT title, promoCode, price, description , slotsLeft, id, location ,  DATE_FORMAT(time, "%W %e %M %Y") as time, 
+        $sql = 'SELECT title, price, description , slotsLeft, id, location ,  DATE_FORMAT(time, "%W %e %M %Y %H:%i") as time, 
                 IF(id IN(
                     SELECT eventID FROM booking WHERE userID = '.auth()->user()->id.')
                 ,true,false) AS isBooked,

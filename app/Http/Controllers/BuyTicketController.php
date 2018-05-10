@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Mail\sendBookingNoti;
+use Carbon\Carbon;
 class BuyTicketController extends MailController
 {
 	public function checkout($eventID, Request $request){
@@ -34,6 +35,9 @@ class BuyTicketController extends MailController
         }
         //Remove this user out of event queue if he has joined in
         $affectedRows = DB::delete("DELETE FROM queue WHERE eventID = ? AND userID = ?",[$request->eventID , auth()->user()->id]);
+        $date = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'bought ticket', 'timestamp'=>$date->toDateTimeString()]);
+        //Send receipt email
         $this->receiptBuyTickets($request,$eventID);
     	return redirect('/events')->with('success','Successfully buy ticket');
     }

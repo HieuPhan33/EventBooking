@@ -63,9 +63,48 @@
 
 				<div class="form-group row">
 					{{Form::label('datetime','Time',['class'=>'col-1 col-form-label'])}}
-					<div class="col-4">
-						{{Form::date('datetime',$event->time,['class'=>'form-control'])}}
-					</div>
+					<label class="col-md-2 col-form-label text-md-right">
+						{{Form::date('datetime',$date,['class'=>'form-control'])}}
+					</label>
+					<label class="col-md-1 col-form-label text-md-right">
+						<select class="form-control" name="hour">
+							<?php
+								for($i = 1; $i <= 12; $i++){
+									$i = sprintf("%02d",$i);
+							?>
+								@if($i == $hour)
+									<option value="{{$i}}" selected="selected">{{$i}}</option>
+								@else
+									<option value="{{$i}}">{{$i}}</option>
+								@endif
+							<?php
+								}
+							?>
+
+						</select>
+					</label>
+					<label class="col-md-1 col-form-label text-md-right">
+						<select class="form-control" name="minute">
+							<?php
+								for ($i = 0; $i <= 60; $i = $i+5){
+									$i = sprintf("%02d",$i);
+							?>
+								@if($i == $minute)
+									<option value="{{$i}}" selected="selected">{{$i}}</option>
+								@else
+									<option value="{{$i}}">{{$i}}</option>
+								@endif
+							<?php
+								}
+							?>
+						</select>
+					</label>
+					<label class="col-md-1 col-form-label text-md-right">
+						<select class="form-control" name="type">
+							<option value="0">AM</option>
+							<option value="1">PM</option>
+						</select>
+					</label>
 				</div>
 
 				<div class="form-group row">

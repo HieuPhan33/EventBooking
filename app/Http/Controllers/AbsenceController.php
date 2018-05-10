@@ -54,6 +54,8 @@ class AbsenceController extends MailController
 	    	$contacts = DB::table('booking')->join('users','booking.userID','=','users.id')->join('events','booking.eventID','=','events.id')
 	    	->select('users.email','users.name','events.title as event')->where('eventID','=',$eventID)->get();
     	}
+        $date = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'checked attendance', 'timestamp'=>$date->toDateTimeString()]);
     	//If there are some attendees, view form to send follow-up mail 
     	if($contacts->count()){
     		return view('form.SendFollowingMail')->with('contacts',$contacts);
