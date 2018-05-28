@@ -96,9 +96,7 @@
 							<option value="1">PM</option>
 						</select>
 					</label>
-					
 				</div>
-
 
 				<div class="form-group row">
 					{{Form::label('price','price',['class'=>'col-1 col-form-label'])}}

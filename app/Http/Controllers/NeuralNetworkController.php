@@ -26,7 +26,7 @@ class NeuralNetworkController extends Controller
     	$carDataType = [2,2,2,2,2,2,3];
     	$wineDataText = 'app\wineData.txt';
     	$wineDataType = [0,0,0,0,0,0,0,0,0,0,0,0,0,3];
-    	$data = $this->generateDataFromText($flowerDataType,$flowerDataText);
+    	$data = $this->generateDataFromText($wineDataType,$wineDataText);
 
         $standardInput = $data[0];
     	$inputs = $data[1];

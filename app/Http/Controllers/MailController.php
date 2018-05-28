@@ -164,19 +164,13 @@ class MailController extends Controller
 
     public function sendPromoCode($eventID){
         $email = DB::select(
-            'SELECT email,name FROM users WHERE id = 
-                (SELECT userID 
-                FROM buy
-                GROUP BY userID
-                ORDER BY total DESC
-                LIMIT 1)');
+            'SELECT email,name FROM users WHERE id = ?',[auth()->user()->id]);
         $promoCode = DB::select(
             "SELECT events.id as eventID, title,location,time, A.type, A.id as promoCode,'".$email[0]->name."' AS username 
              FROM events INNER JOIN
             (SELECT id, eventID, type FROM promo_codes
             WHERE eventID = ?
-            ORDER BY RAND()
-            LIMIT 1) A
+            ORDER BY RAND()) A
             on events.id = A.eventID",[$eventID]);
         Mail::to($email[0]->email)
         ->queue(new sendPromoCodeNoti($promoCode[0]));

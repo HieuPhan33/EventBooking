@@ -108,15 +108,18 @@
 				</div>
 
 				<div class="form-group row">
-					{{Form::label('price','price',['class'=>'col-1 col-form-label'])}}
+					{{Form::label('price_edit','Price',['class'=>'col-1 col-form-label'])}}
 					<div class="col-4">
-						{{Form::text('price',$event->price,['class'=>'form-control','onkeyup'=>'validatePrice()'])}}
+						{{Form::text('price_edit',$event->price,['class'=>'form-control','onkeyup'=>'validatePrice_edit()'])}}
 					</div>
 				</div>
+
 				<div name="promoCodesContainer"></div>
-				<button style="display:none" name="addCodesBtn" type="button" onClick="addCodes()">Add Promotional Code</button>
-
-
+				@if($event->price == 0)
+					<button style="display:none" name="addCodesBtn_edit" type="button" onClick="addCodes_edit()">Adjust Promotional Code</button>
+				@else
+					<button name="addCodesBtn_edit" type="button" onClick="addCodes_edit()">Adjust Promotional Code</button>
+				@endif
 				<input name="numOfCodes" value="0" type="hidden">
 				<div class="form-group row">
 					{{Form::submit('Submit',['class'=>'btn btn-primary'])}}

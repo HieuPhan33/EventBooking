@@ -364,7 +364,7 @@ class EventsController extends MailController
         $event->hostID = $request->input('host');
         $event->capacity = $request->input('capacity');
         $event->slotsLeft = $request->input('capacity');
-        $price = $request->input('price');
+        $price = $request->input('price_edit');
         if($price == null){
             $price = 0;
         }
@@ -395,6 +395,8 @@ class EventsController extends MailController
                 }
             }
         }
+        $dt = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'updated event '.$event->title, 'timestamp'=>$dt->toDateTimeString()]);
         return redirect('/events/'.$id.'/manager')->with('success','Event Updated');
     }
 

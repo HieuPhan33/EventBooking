@@ -15,7 +15,8 @@ class UserManagementController extends Controller
     }
    	public function showSettings(){
    		$rs = DB::select('SELECT * FROM users WHERE id = ?',[auth()->user()->id]);
-   		$logs = DB::select('SELECT * FROM logs WHERE id = ?',[auth()->user()->id]);
+   		$logs = DB::select('SELECT * FROM logs WHERE userID = ?',[auth()->user()->id]);
+      // var_dump($logs);
    		return view('settings')->with('detail',$rs[0])->with('logs',$logs);
    	}
 
