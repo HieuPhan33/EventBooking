@@ -4,4 +4,7 @@
 <p>{{$event->time}}</p>
 <p>{{$event->location}}</p>
 <a>Hurry up you may miss the chance to join in this great event</a><br>
-<a href="{{url('/events/'.$event->id.'/student')}}">Follow this link to book in the event</a>
+<?php
+	$url = "http://localhost:8000/events/".$event->id."/student";
+?>
+<a href="{{$url}}">Follow this link to book in the event</a>

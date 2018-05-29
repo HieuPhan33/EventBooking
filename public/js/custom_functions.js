@@ -439,7 +439,8 @@ function validatePromoCode(codes){
 		}
 	});
 	console.log($("#type").val());
-	$("#err").text("Invalid Promotional Codes");
+	if(!isValid)
+		$("#err").text("Invalid Promotional Codes");
 	return isValid;
 }
 

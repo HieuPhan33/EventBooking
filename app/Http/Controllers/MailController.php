@@ -142,24 +142,24 @@ class MailController extends Controller
     }
 
     public function sendFollowingUpMail(Request $request){
-      $file = $request->file('uploaded_file');
-      $input = array();
-      $input['event']=$request->input['event'];
-      $input['title'] = $request->input('title');
-      $input['message'] = $request->input('message');
-      $input['type'] = $file->getMimeType();
-      $input['filename'] = $file->getClientOriginalName();
-      //Move Uploaded File
-      $destinationPath = public_path().'\uploads';
-      $path = $file->move($destinationPath,$file->getClientOriginalName());
-      $input['path'] = $path;
-      $emails = explode(",",$request->input('emails')[0]);
-      $names = explode(",",$request->input('names')[0]);
-      for($i = 0; $i < count($emails) ;$i++){
-        $input['name'] = $names[$i];
-        Mail::to($emails[$i])->send(new sendFollowUp($input));
-      }
-      return redirect('/events');
+        $file = $request->file('uploaded_file');
+        $input = array();
+        $input['event']=$request->input('event');
+        $input['title'] = $request->input('title');
+        $input['message'] = $request->input('message');
+        $input['type'] = $file->getMimeType();
+        $input['filename'] = $file->getClientOriginalName();
+        //Move Uploaded File
+        $destinationPath = public_path().'\uploads';
+        $path = $file->move($destinationPath,$file->getClientOriginalName());
+        $input['path'] = $path;
+        $emails = explode(",",$request->input('emails')[0]);
+        $names = explode(",",$request->input('names')[0]);
+        for($i = 0; $i < count($emails) ;$i++){
+            $input['name'] = $names[$i];
+            Mail::to($emails[$i])->send(new sendFollowUp($input));
+        }
+        return redirect('/events');
     }
 
     public function sendPromoCode($eventID){
@@ -169,11 +169,11 @@ class MailController extends Controller
             "SELECT events.id as eventID, title,location,time, A.type, A.id as promoCode,'".$email[0]->name."' AS username 
              FROM events INNER JOIN
             (SELECT id, eventID, type FROM promo_codes
-            WHERE eventID = ?
-            ORDER BY RAND()) A
-            on events.id = A.eventID",[$eventID]);
+            WHERE eventID = ?) A
+            on events.id = A.eventID
+            ORDER BY A.type DESC",[$eventID]);
         Mail::to($email[0]->email)
-        ->queue(new sendPromoCodeNoti($promoCode[0]));
+        ->queue(new sendPromoCodeNoti($promoCode));
 
     }
 }

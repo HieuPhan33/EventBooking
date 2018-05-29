@@ -33,16 +33,18 @@ class AbsenceController extends MailController
 		    	//Send absent reminder
 		    	$this->absentReminder($eventID,$emailRs->email, $username->name);
 		    	//If user has been absent more than 3 times , he get banned
-		    	if($absentRs[0]->absentTimes > 3){
-		    		DB::table('users')->where('id',$absentee)
-		    						 ->update(['isBanned'=>1]);
-		    		$this->banNotification($eventID,$emailRs->email,$username->name);
-		    		$when = Carbon::now()->addWeeks(4);
-					//Set unbannedDate
-			        DB::table('users')->where('id','=',$absentee)->update(['unbannedDate'=>$when]);
-		    		//ProcessUnban job, unban user after 4 weeks
-		    		ProcessUnban::dispatch($absentee)->delay($when);
+		    	if($absentRs != null){
+			    	if($absentRs[0]->absentTimes >= 3){
+			    		DB::table('users')->where('id',$absentee)
+			    						 ->update(['isBanned'=>1]);
+			    		$this->banNotification($eventID,$emailRs->email,$username->name);
+			    		$when = Carbon::now()->addWeeks(4);
+						//Set unbannedDate
+				        DB::table('users')->where('id','=',$absentee)->update(['unbannedDate'=>$when]);
+			    		//ProcessUnban job, unban user after 4 weeks
+			    		ProcessUnban::dispatch($absentee)->delay($when);
 
+			    	}
 		    	}
 	    	}
 	    	//Get contact detail of attendees

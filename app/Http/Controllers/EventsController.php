@@ -189,8 +189,6 @@ class EventsController extends MailController
         $event->price = $price;
         $event->save();
         $eventID = DB::getPdo()->lastInsertId();
-        $dt = new Carbon();
-        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'created event '.$event->title, 'timestamp'=>$dt->toDateTimeString()]);
         // Send events to whom interested
         $this->sendEventToUsers($eventID,$event->category);
         $numOfCodes = $request->input('numOfCodes');
@@ -211,9 +209,11 @@ class EventsController extends MailController
                     $promoCode->save();
                 }
             }
-            //Send promotional code to the keenest user
+            //Send promotional code to the manager
             $this->sendPromoCode($eventID);
         }
+        $dt = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'created event '.$event->title, 'timestamp'=>$dt->toDateTimeString()]);
 
         return redirect('/events')->with('success','Event Created');
     }
@@ -370,8 +370,6 @@ class EventsController extends MailController
         }
         $event->price = $price;
         $event->save();
-        $date = new Carbon();
-        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'updated event '.$event->title, 'timestamp'=>$date->toDateTimeString()]);
         $numOfCodes = $request->input('numOfCodes');
         if($numOfCodes != 0){
             //Clear old promocodes
@@ -394,6 +392,8 @@ class EventsController extends MailController
                     }
                 }
             }
+            //Send promotional code to the manager
+            $this->sendPromoCode($id);
         }
         $dt = new Carbon();
         DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'updated event '.$event->title, 'timestamp'=>$dt->toDateTimeString()]);
@@ -408,14 +408,17 @@ class EventsController extends MailController
      */
     public function destroy($id)
     {
+        $event = DB::select("SELECT title from events where id = ?",[$id]);
+        $date = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'deleted event '.$event[0]->title, 'timestamp'=>$date->toDateTimeString()]);
         DB::table('booking')->where('eventID','=',$id)->delete();
         DB::table('bookmark')->where('eventID','=',$id)->delete();
         DB::table('buy')->where('eventID','=',$id)->delete();
         DB::table('promo_codes')->where('eventID','=',$id)->delete();
         DB::table('absent')->where('eventID','=',$id)->delete();
         DB::table('events')->where('id','=',$id)->delete();
-        $date = new Carbon();
-        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'deleted event '.$event->title, 'timestamp'=>$date->toDateTimeString()]);
+
+
         return redirect('/events')->with('success','Event Deleted');
     }
     public function search(Request $request)
@@ -433,6 +436,8 @@ class EventsController extends MailController
                 ,true,false) AS isEnqueued
                 FROM events
                  WHERE time >= '".date("Y-m-d H:i:s")."'";
+        if(auth()->user()->role == 1)
+            $sql = $sql.' AND isFinalized = false';
         //If users enter keywords
         if($request->input('keywords') != null){
             $sql = $sql.' AND (';
@@ -469,7 +474,8 @@ class EventsController extends MailController
         $eventID = $_REQUEST['eventID'];
         $promoCodes = DB::select('
             SELECT id,type FROM promo_codes
-            WHERE eventID = ?',[$eventID]);
+            WHERE eventID = ?
+            ORDER BY type DESC',[$eventID]);
         $promoCodes = json_encode($promoCodes);
         return $promoCodes;
     }

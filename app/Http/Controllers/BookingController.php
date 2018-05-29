@@ -25,8 +25,10 @@ class BookingController extends MailController
         //Remove this user out of event queue if he has joined in
         $affectedRows = DB::delete("DELETE FROM queue WHERE eventID = ? AND userID = ?",[$request->eventID , auth()->user()->id]);
         $this->bookingNotify($request,$request->eventID);
+        $this->reminderNotify($request);
+        $event = DB::select("SELECT * FROM events WHERE id = ?",[$request->eventID]);
         $date = new Carbon();
-        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'booked event', 'timestamp'=>$date->toDateTimeString()]);
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'booked event '.$event[0]->title, 'timestamp'=>$date->toDateTimeString()]);
     	return redirect('/events/'.$request->eventID.'/student')->with('success','Successfully book in event');
     }
 
@@ -41,11 +43,13 @@ class BookingController extends MailController
         $emails=array();
         if($slotsLeft > 0){
             $emails = DB::table('queue')->select('email')->where('eventID',$request->eventID)->get();
-            $this->inviteUsers($request,$emails);
+            if($emails != null)
+                $this->inviteUsers($request,$emails);
         }
         $this->cancelingNotify($request,$request->eventID);
+        $event = DB::select("SELECT * FROM events WHERE id = ?",[$request->eventID]);
         $date = new Carbon();
-        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'canceled event', 'timestamp'=>$date->toDateTimeString()]);
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'canceled event '.$event[0]->title, 'timestamp'=>$date->toDateTimeString()]);
     	return redirect('/events/'.$request->eventID.'/student')->with('success','Successfully cancel booking event');
     }
 
@@ -57,15 +61,18 @@ class BookingController extends MailController
         $queue->email = auth()->user()->email;
         $queue->save();
         $this->joinQueueNotify($request,$request->eventID);
+        $event = DB::select("SELECT * FROM events WHERE id = ?",[$request->eventID]);
         $date = new Carbon();
-        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'enqueued event', 'timestamp'=>$date->toDateTimeString()]);
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'joined the waiting list for event '.$event[0]->title, 'timestamp'=>$date->toDateTimeString()]);
         return redirect()->back()->with('success','Successfully joining the queue');
     }
 
     public function dequeue(Request $request){
         $affectedRows = DB::delete("DELETE FROM queue WHERE eventID = ? AND userID = ?",[$request->eventID , auth()->user()->id]);
         $date = new Carbon();
-        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'dequeued event', 'timestamp'=>$date->toDateTimeString()]);
+        $event = DB::select("SELECT * FROM events WHERE id = ?",[$request->eventID]);
+        $date = new Carbon();
+        DB::table('logs')->insert(['userID'=>auth()->user()->id, 'activity'=>'canceled waiting list for event '.$event[0]->title, 'timestamp'=>$date->toDateTimeString()]);
         return redirect()->back()->with('success','Successfully leaving the queue');
     }
 }

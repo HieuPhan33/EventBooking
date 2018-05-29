@@ -29,6 +29,6 @@ class sendPromoCodeNoti extends Mailable
      */
     public function build()
     {
-        return $this->view('emails.promoCodeMail')->subject('Promotional Code For The Amazing Event');
+        return $this->view('emails.promoCodeMail')->subject('Promotional Code For The New Created Event');
     }
 }
