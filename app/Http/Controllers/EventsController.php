@@ -73,7 +73,8 @@ class EventsController extends MailController
                 ORDER BY field(events.category'.$categoryOrderStr."), time ASC",[auth()->user()->id,auth()->user()->id,auth()->user()->id, date("Y-m-d H:i:s")]);
 
         }
-        echo "<script>console.log('The top preference is ".$events[0]->category."')</script>";
+        if(auth()->user()->role > 1)
+            echo "<script>console.log('The top preference is ".$events[0]->category."')</script>";
         $entries = $this->arrayPaginator($events,$request);
         return view('pages.index')->with('events',$entries);
     }
